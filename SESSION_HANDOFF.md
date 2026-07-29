@@ -2,35 +2,49 @@
 
 ## State
 
-- Date: 2026-07-30
-- Game: **Inkfall** (idea 4 - Ink Gravity)
-- Vibe: **A-amped** wet ink on warm paper + vermilion seal stamp; success-only cyan rim flash
-- Host: Vercel prod **https://inkfall-swart.vercel.app**
-- Repo: **https://github.com/edgarmanuel/inkfall** (main pushed)
-- Local: `npx serve public -l 3456` (may still be running)
+- Date: 2026-07-30 (**session closed**)
+- Game: **Inkfall** (idea 4 - Ink Gravity) - playable on Vercel
+- Vibe: **A-amped** wet ink on warm paper + vermilion seal; success-only cyan rim
+- Host: **https://inkfall-swart.vercel.app**
+- Repo: **https://github.com/edgarmanuel/inkfall** (main)
+- Latest feel commits: draw-then-lock, multi-stroke ink (not mid-draw chase)
 
-## Shipped in v1
+## Shipped
 
-- Single-file canvas game in `public/index.html`
-- Draw gravity wells (touch + mouse), blot physics, seal capture
-- Levels escalate; dry-blot hazards from level 3
-- Score + best (localStorage), juice (shake, stamp, splatter, synth SFX)
-- Menu + copy score challenge for FB
-- Commit: `7073487` Ship Inkfall v1
+- Canvas game `public/index.html`
+- Draw wells (touch + mouse); blot physics; seal capture; level hazards
+- Score + best (localStorage); juice; copy score challenge
+- Headless feel tests: `node scripts/physics-test.mjs`
+- Deploy: `npx vercel ./public --yes --prod`
 
-## Exact next action (fresh low-token session)
+## Feel law (do not regress)
 
-1. Open URL on Android Chrome; play 5 runs; note feel bugs
-2. Optional polish packet: stronger first-run tutorial, more seal juice, level seeds
-3. FB personal post with caption in README (fill score + URL)
-4. If redeploying: `npx vercel ./public --yes --prod` from `C:\Projects\inkfall`
+1. **No mid-draw pull** - blot pauses while finger/mouse is down
+2. **Wells lock on release only**
+3. **Multi-stroke ink** - budget supports several strokes per level
+4. After lock, pull should stay snappy (not 0.86/frame mush)
 
-## Known limits (2h cut)
+## Other game options (banked for next build)
 
-- No Play Store APK / Capacitor
-- No server leaderboard
-- Art is procedural canvas (not external sprite sheets)
-- Title seal glyph uses CJK character in-canvas (visual only)
+Full write-up: **`docs/GAME_OPTIONS_BANK.md`**
+
+| # | Idea | Status | Next? |
+|---|---|---|---|
+| 1 | **Void Parry** | BANKED | **Best next 2h game** |
+| 2 | **Orbit Snap** | BANKED | Strong alt |
+| 3 | Last Courier | DEFERRED | Only thin-art scope |
+| 4 | Ink Gravity / **Inkfall** | **SHIPPED** | Polish only |
+| 5 | Bloom Relay | DEFERRED | Only thin endless |
+
+You can ship another game after Inkfall; prefer **Void Parry** or **Orbit Snap**
+using the same static+Vercel pattern.
+
+## Exact next action
+
+**Inkfall polish (optional):** Android hard-refresh playtest; FB post with score.
+
+**New game session:** open `docs/GAME_OPTIONS_BANK.md`, pick 1 or 2, 2h light
+build in a **new folder** (e.g. `C:\Projects\void-parry`), same Vercel pattern.
 
 ## FB caption
 
@@ -38,8 +52,15 @@
 I made a tiny game you can play in the browser.
 
 Draw wet ink strokes - they pull a living blot like gravity.
-Get it into the red seal before the page dries.
+Lift your finger to lock a well. Stack strokes if you need to.
 
 I scored _____. Beat me:
 https://inkfall-swart.vercel.app
 ```
+
+## Close checklist
+
+- [x] Options bank logged
+- [x] Feel law written
+- [ ] Operator FB post (when ready)
+- [ ] Optional: commit this handoff + GAME_OPTIONS_BANK if not yet on remote
