@@ -428,14 +428,19 @@
     if (lv === 3) return "dry";
     if (lv === 4) return "wall_gate";
     if (lv % 5 === 0) return "gauntlet";
+    // Full roster - every non-gauntlet slot walks the list so nothing is skipped for long
     const pool = [
-      "wall_gate", "same_side", "moving_seal", "wind_drift",
-      "patrol", "corridor", "pinch", "diagonal", "dry", "bounce_start"
+      "moving_seal", "patrol", "corridor", "same_side", "wind_drift",
+      "pinch", "diagonal", "bounce_start", "wall_gate", "dry",
+      "patrol", "pinch", "same_side", "moving_seal", "corridor"
     ];
-    // Deterministic cycle with a light shuffle by band so runs feel authored
-    const band = Math.floor((lv - 5) / 3);
-    const idx = (lv + band * 3 + (band % 2 === 0 ? 0 : 4)) % pool.length;
-    return pool[idx];
+    // Count only non-special levels for index
+    let n = 0;
+    for (let i = 1; i <= lv; i++) {
+      if (i <= 4 || i % 5 === 0) continue;
+      n++;
+    }
+    return pool[(n - 1 + pool.length) % pool.length];
   }
 
   function makeBlob(x, y, vx, vy) {

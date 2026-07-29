@@ -8,12 +8,16 @@ function pickArchetype(lv) {
   if (lv === 4) return "wall_gate";
   if (lv % 5 === 0) return "gauntlet";
   const pool = [
-    "wall_gate", "same_side", "moving_seal", "wind_drift",
-    "patrol", "corridor", "pinch", "diagonal", "dry", "bounce_start"
+    "moving_seal", "patrol", "corridor", "same_side", "wind_drift",
+    "pinch", "diagonal", "bounce_start", "wall_gate", "dry",
+    "patrol", "pinch", "same_side", "moving_seal", "corridor"
   ];
-  const band = Math.floor((lv - 5) / 3);
-  const idx = (lv + band * 3 + (band % 2 === 0 ? 0 : 4)) % pool.length;
-  return pool[idx];
+  let n = 0;
+  for (let i = 1; i <= lv; i++) {
+    if (i <= 4 || i % 5 === 0) continue;
+    n++;
+  }
+  return pool[(n - 1 + pool.length) % pool.length];
 }
 
 const labels = [];
