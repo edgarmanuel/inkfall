@@ -391,6 +391,9 @@
   let blob = null;
   let goal = null;
   let hazards = [];
+  let walls = [];
+  let wind = { x: 0, y: 0 };
+  let levelLabel = "";
   let tPrev = 0;
   let winHold = 0;
   let loseHold = 0;
@@ -403,12 +406,89 @@
     combo = 0;
   }
 
-  function inkBudgetForLevel(lv) {
-    // Multiple strokes per level - not a single-shot draw
-    return clamp(320 + lv * 12, 320, 480);
+  function inkBudgetForLevel(lv, arch) {
+    let base = clamp(300 + lv * 8, 300, 420);
+    if (arch === "pinch" || arch === "drought") base *= 0.72;
+    if (arch === "gauntlet") base *= 0.85;
+    if (arch === "open" || arch === "tutorial") base *= 1.1;
+    return base;
   }
-  function timeForLevel(lv) {
-    return clamp(13 - lv * 0.35, 7.5, 13);
+  function timeForLevel(lv, arch) {
+    let t = clamp(12.5 - lv * 0.12, 8.5, 12.5);
+    if (arch === "moving_seal" || arch === "patrol") t += 1.5;
+    if (arch === "pinch") t -= 1.0;
+    if (arch === "gauntlet") t += 0.8;
+    if (arch === "open" || arch === "tutorial") t += 1.2;
+    return clamp(t, 7.5, 14);
+  }
+
+  /** Rotate layouts so level 15 is not "level 3 + more dots" */
+  function pickArchetype(lv) {
+    if (lv <= 2) return "tutorial";
+    if (lv === 3) return "dry";
+    if (lv === 4) return "wall_gate";
+    if (lv % 5 === 0) return "gauntlet";
+    const pool = [
+      "wall_gate", "same_side", "moving_seal", "wind_drift",
+      "patrol", "corridor", "pinch", "diagonal", "dry", "bounce_start"
+    ];
+    // Deterministic cycle with a light shuffle by band so runs feel authored
+    const band = Math.floor((lv - 5) / 3);
+    const idx = (lv + band * 3 + (band % 2 === 0 ? 0 : 4)) % pool.length;
+    return pool[idx];
+  }
+
+  function makeBlob(x, y, vx, vy) {
+    return {
+      x: x, y: y,
+      vx: vx || 0, vy: vy || 0,
+      r: 16,
+      wobble: Math.random() * Math.PI * 2,
+      wet: 1,
+      trail: []
+    };
+  }
+
+  function makeGoal(x, y, r) {
+    return {
+      x: x, y: y,
+      r: r == null ? 28 : r,
+      rot: rand(-0.35, 0.35),
+      open: true,
+      mode: "still",
+      vx: 0, vy: 0,
+      minX: 60, maxX: W - 60,
+      minY: 60, maxY: H * 0.45,
+      phase: 0,
+      cx: x, cy: y,
+      amp: 40
+    };
+  }
+
+  function addStaticHazard(x, y, r) {
+    hazards.push({
+      x: x, y: y,
+      r: r || rand(14, 22),
+      phase: Math.random() * Math.PI * 2,
+      spin: rand(-0.6, 0.6),
+      vx: 0, vy: 0,
+      patrol: false
+    });
+  }
+
+  function addPatrolHazard(x, y, vx, vy, r) {
+    hazards.push({
+      x: x, y: y,
+      r: r || rand(16, 22),
+      phase: Math.random() * Math.PI * 2,
+      spin: rand(-1, 1),
+      vx: vx, vy: vy,
+      patrol: true
+    });
+  }
+
+  function clearApart(ax, ay, bx, by, minD) {
+    return dist(ax, ay, bx, by) >= minD;
   }
 
   function spawnLevel() {
@@ -417,64 +497,172 @@
     wells = [];
     drawing = null;
     hazards = [];
+    walls = [];
+    wind = { x: 0, y: 0 };
     stampT = 0;
     paperWarp = 0;
     successFlash = 0;
     firstStrokeDone = false;
-    hintTimer = 4.5;
-    inkMax = inkBudgetForLevel(level);
-    inkLeft = inkMax;
-    timeMax = timeForLevel(level);
-    timeLeft = timeMax;
+    hintTimer = 3.8;
 
     const margin = 56;
-    // blob starts lower-left-ish, goal upper-right-ish, with variation
-    const side = Math.random() < 0.5;
-    blob = {
-      x: side ? rand(margin + 20, W * 0.42) : rand(W * 0.58, W - margin - 20),
-      y: rand(H * 0.55, H - margin - 40),
-      vx: 0,
-      vy: 0,
-      r: 16,
-      wobble: Math.random() * Math.PI * 2,
-      wet: 1,
-      trail: []
-    };
-    goal = {
-      x: side ? rand(W * 0.55, W - margin - 10) : rand(margin + 10, W * 0.45),
-      y: rand(margin + 30, H * 0.38),
-      r: 28,
-      rot: rand(-0.35, 0.35),
-      open: true
-    };
+    const arch = pickArchetype(level);
+    levelLabel = arch;
 
-    // keep them apart
-    let guard = 0;
-    while (dist(blob.x, blob.y, goal.x, goal.y) < 200 && guard++ < 20) {
-      goal.x = rand(margin + 10, W - margin - 10);
-      goal.y = rand(margin + 30, H * 0.4);
-    }
+    inkMax = inkBudgetForLevel(level, arch);
+    inkLeft = inkMax;
+    timeMax = timeForLevel(level, arch);
+    timeLeft = timeMax;
 
-    // drying blot hazards (absorb ink / bounce soft) from level 3
-    const hzCount = level >= 3 ? Math.min(1 + Math.floor((level - 3) / 2), 4) : 0;
-    for (let i = 0; i < hzCount; i++) {
-      let hx, hy, tries = 0;
-      do {
-        hx = rand(margin, W - margin);
-        hy = rand(H * 0.28, H * 0.72);
-        tries++;
-      } while (
-        tries < 30 &&
-        (dist(hx, hy, blob.x, blob.y) < 90 ||
-          dist(hx, hy, goal.x, goal.y) < 90)
-      );
-      hazards.push({
-        x: hx, y: hy,
-        r: rand(14, 22),
-        phase: Math.random() * Math.PI * 2,
-        spin: rand(-0.6, 0.6)
+    const left = margin + 24;
+    const right = W - margin - 24;
+    const midX = W * 0.5;
+    const top = margin + 40;
+    const bot = H - margin - 36;
+    const midY = H * 0.48;
+
+    // Default open diagonal (overwritten by archetypes)
+    let side = level % 2 === 0;
+    blob = makeBlob(
+      side ? rand(left, W * 0.4) : rand(W * 0.6, right),
+      rand(H * 0.58, bot),
+      0, 0
+    );
+    goal = makeGoal(
+      side ? rand(W * 0.58, right) : rand(left, W * 0.42),
+      rand(top, H * 0.36),
+      28
+    );
+
+    if (arch === "tutorial") {
+      blob = makeBlob(W * 0.28, H * 0.72, 0, 0);
+      goal = makeGoal(W * 0.72, H * 0.28, 30);
+      levelLabel = "learn the well";
+    } else if (arch === "dry") {
+      // Classic far placement + static dry blots in the lane
+      let guard = 0;
+      while (dist(blob.x, blob.y, goal.x, goal.y) < 220 && guard++ < 24) {
+        goal.x = rand(left, right);
+        goal.y = rand(top, H * 0.38);
+      }
+      const n = 1 + Math.min(3, Math.floor(level / 4));
+      for (let i = 0; i < n; i++) {
+        const t = (i + 1) / (n + 1);
+        addStaticHazard(
+          lerp(blob.x, goal.x, t) + rand(-30, 30),
+          lerp(blob.y, goal.y, t) + rand(-20, 20),
+          rand(15, 20)
+        );
+      }
+      levelLabel = "dry blots block the lane";
+    } else if (arch === "wall_gate") {
+      blob = makeBlob(side ? left + 20 : right - 20, bot - 20, 0, 0);
+      goal = makeGoal(side ? right - 30 : left + 30, top + 20, 26);
+      const gateY = midY + rand(-40, 40);
+      const gap = clamp(70 - level * 1.2, 48, 70);
+      // Vertical wall with a gap - must route through
+      walls.push({ x1: midX, y1: margin + 10, x2: midX, y2: gateY - gap * 0.5 });
+      walls.push({ x1: midX, y1: gateY + gap * 0.5, x2: midX, y2: H - margin - 10 });
+      if (level >= 8) addStaticHazard(midX + (side ? -50 : 50), gateY, 16);
+      levelLabel = "thread the gate";
+    } else if (arch === "same_side") {
+      // Both on one half - needs a hook path, not a straight suck
+      const s = Math.random() < 0.5 ? -1 : 1;
+      blob = makeBlob(midX + s * rand(40, 100), bot - 10, 0, 0);
+      goal = makeGoal(midX + s * rand(80, 140), top + 30, 26);
+      walls.push({
+        x1: midX + s * 20, y1: H * 0.32,
+        x2: midX + s * 20, y2: H * 0.78
       });
+      levelLabel = "same side - loop around";
+    } else if (arch === "moving_seal") {
+      blob = makeBlob(rand(left, right), bot - 30, 0, 0);
+      goal = makeGoal(midX, top + 50, 26);
+      goal.mode = Math.random() < 0.5 ? "slide" : "orbit";
+      goal.cx = goal.x;
+      goal.cy = goal.y;
+      goal.amp = 50 + Math.min(40, level * 2);
+      goal.vx = (90 + level * 3) * (Math.random() < 0.5 ? 1 : -1);
+      goal.minX = left;
+      goal.maxX = right;
+      goal.phase = Math.random() * Math.PI * 2;
+      if (level >= 10) addStaticHazard(midX, midY, 18);
+      levelLabel = "seal on the move";
+    } else if (arch === "wind_drift") {
+      blob = makeBlob(side ? left : right, midY + 40, 0, 0);
+      goal = makeGoal(side ? right - 20 : left + 20, top + 40, 27);
+      const wx = (side ? 1 : -1) * (55 + level * 2);
+      wind = { x: wx, y: rand(-15, 25) };
+      levelLabel = "paper wind";
+    } else if (arch === "patrol") {
+      blob = makeBlob(left + 10, bot - 20, 0, 0);
+      goal = makeGoal(right - 20, top + 30, 26);
+      const spd = 70 + level * 4;
+      addPatrolHazard(midX, H * 0.4, spd, 0, 18);
+      addPatrolHazard(W * 0.35, H * 0.55, 0, spd * 0.7, 16);
+      if (level >= 12) addPatrolHazard(W * 0.65, H * 0.5, -spd * 0.6, spd * 0.4, 15);
+      levelLabel = "patrol dry ink";
+    } else if (arch === "corridor") {
+      blob = makeBlob(midX, bot - 10, 0, 0);
+      goal = makeGoal(midX + rand(-30, 30), top + 20, 25);
+      const half = clamp(58 - level * 1.1, 40, 58);
+      walls.push({ x1: midX - half, y1: H * 0.22, x2: midX - half, y2: H * 0.82 });
+      walls.push({ x1: midX + half, y1: H * 0.22, x2: midX + half, y2: H * 0.82 });
+      if (level >= 9) addStaticHazard(midX, midY, 14);
+      levelLabel = "narrow corridor";
+    } else if (arch === "pinch") {
+      blob = makeBlob(side ? left : right, bot - 20, 0, 0);
+      goal = makeGoal(side ? right : left, top + 25, clamp(22 - level * 0.15, 16, 22));
+      let guard = 0;
+      while (dist(blob.x, blob.y, goal.x, goal.y) < 280 && guard++ < 20) {
+        goal.x = rand(left, right);
+        goal.y = rand(top, H * 0.3);
+      }
+      addStaticHazard(lerp(blob.x, goal.x, 0.45), lerp(blob.y, goal.y, 0.45), 20);
+      levelLabel = "tiny seal - long shot";
+    } else if (arch === "diagonal") {
+      blob = makeBlob(left + 10, bot - 10, 0, 0);
+      goal = makeGoal(right - 15, top + 15, 26);
+      // Diagonal fold barriers
+      walls.push({ x1: W * 0.2, y1: H * 0.35, x2: W * 0.55, y2: H * 0.55 });
+      walls.push({ x1: W * 0.45, y1: H * 0.5, x2: W * 0.8, y2: H * 0.7 });
+      levelLabel = "folded paper";
+    } else if (arch === "bounce_start") {
+      // Blob already sliding - place a well under a moving target
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      blob = makeBlob(midX, bot - 40, dir * (120 + level * 5), -40);
+      goal = makeGoal(midX - dir * 80, top + 60, 26);
+      walls.push({ x1: margin + 8, y1: H * 0.5, x2: W * 0.35, y2: H * 0.5 });
+      walls.push({ x1: W * 0.65, y1: H * 0.5, x2: W - margin - 8, y2: H * 0.5 });
+      levelLabel = "already moving";
+    } else if (arch === "gauntlet") {
+      blob = makeBlob(left + 15, bot - 15, 0, 0);
+      goal = makeGoal(right - 25, top + 35, 24);
+      goal.mode = "slide";
+      goal.vx = 100 + level * 2;
+      goal.minX = W * 0.45;
+      goal.maxX = right;
+      goal.cy = goal.y;
+      walls.push({ x1: midX - 10, y1: margin + 10, x2: midX - 10, y2: H * 0.42 });
+      walls.push({ x1: midX + 30, y1: H * 0.48, x2: midX + 30, y2: H - margin });
+      addPatrolHazard(W * 0.4, H * 0.55, 80, 40, 17);
+      addStaticHazard(W * 0.7, H * 0.4, 16);
+      levelLabel = "gauntlet";
     }
+
+    // Late-game spice: sometimes shrink seal a bit on non-pinch
+    if (level >= 12 && arch !== "pinch" && arch !== "tutorial") {
+      goal.r = Math.max(18, goal.r - 2 - Math.floor((level - 12) / 5));
+    }
+
+    floatTexts.push({
+      x: W * 0.5,
+      y: 72,
+      text: levelLabel,
+      life: 2.2,
+      vy: -8,
+      color: "#5a4030"
+    });
 
     updateHud();
   }
@@ -485,12 +673,14 @@
     lvlEl.textContent = String(level);
     inkBar.style.transform = "scaleX(" + clamp(inkLeft / inkMax, 0, 1).toFixed(4) + ")";
     timeBar.style.transform = "scaleX(" + clamp(timeLeft / timeMax, 0, 1).toFixed(4) + ")";
-    if (hintTimer > 0 && !firstStrokeDone) {
-      hintEl.textContent = "Draw, then lift — the well locks when you release";
-    } else if (level >= 3 && hazards.length) {
-      hintEl.textContent = "Avoid dry blots — they drink your ink";
+    if (hintTimer > 0) {
+      hintEl.textContent = levelLabel
+        ? ("Lv " + level + " · " + levelLabel)
+        : "Draw, then lift to lock a well";
+    } else if (!firstStrokeDone) {
+      hintEl.textContent = "Draw, then lift — well locks on release";
     } else {
-      hintEl.textContent = "Multiple strokes OK · ink bar is your budget";
+      hintEl.textContent = "Stack strokes · ink is the budget";
     }
   }
 
@@ -534,7 +724,13 @@
     const timeBonus = Math.floor(timeLeft * 12);
     const inkBonus = Math.floor((inkLeft / inkMax) * 40);
     const levelBonus = 50 + level * 15;
-    const gained = levelBonus + timeBonus + inkBonus + combo * 5;
+    // Harder layouts pay a bit more
+    let archBonus = 0;
+    if (levelLabel === "gauntlet") archBonus = 40;
+    else if (levelLabel === "tiny seal - long shot") archBonus = 25;
+    else if (levelLabel === "seal on the move" || levelLabel === "patrol dry ink") archBonus = 20;
+    else if (levelLabel === "thread the gate" || levelLabel === "narrow corridor") archBonus = 15;
+    const gained = levelBonus + timeBonus + inkBonus + combo * 5 + archBonus;
     score += gained;
     combo += 1;
     if (score > best) {
@@ -795,6 +991,64 @@
     };
   }
 
+  function nearestOnSegment(x1, y1, x2, y2, x, y) {
+    const abx = x2 - x1, aby = y2 - y1;
+    const len2 = abx * abx + aby * aby || 1;
+    let t = ((x - x1) * abx + (y - y1) * aby) / len2;
+    t = clamp(t, 0, 1);
+    const px = x1 + abx * t;
+    const py = y1 + aby * t;
+    return { d: dist(x, y, px, py), x: px, y: py, t: t };
+  }
+
+  function stepMovers(dt) {
+    // Moving seal
+    if (goal && goal.mode === "slide") {
+      goal.x += goal.vx * dt;
+      if (goal.x < goal.minX) { goal.x = goal.minX; goal.vx = Math.abs(goal.vx); }
+      if (goal.x > goal.maxX) { goal.x = goal.maxX; goal.vx = -Math.abs(goal.vx); }
+      if (goal.vy) {
+        goal.y += goal.vy * dt;
+        if (goal.y < goal.minY) { goal.y = goal.minY; goal.vy = Math.abs(goal.vy); }
+        if (goal.y > goal.maxY) { goal.y = goal.maxY; goal.vy = -Math.abs(goal.vy); }
+      }
+    } else if (goal && goal.mode === "orbit") {
+      goal.phase += dt * (1.1 + level * 0.02);
+      goal.x = goal.cx + Math.cos(goal.phase) * goal.amp;
+      goal.y = goal.cy + Math.sin(goal.phase) * goal.amp * 0.55;
+    }
+
+    // Patrol hazards bounce in playfield
+    const m = 40;
+    for (const h of hazards) {
+      h.phase += dt * h.spin;
+      if (!h.patrol) continue;
+      h.x += h.vx * dt;
+      h.y += h.vy * dt;
+      if (h.x < m) { h.x = m; h.vx = Math.abs(h.vx); }
+      if (h.x > W - m) { h.x = W - m; h.vx = -Math.abs(h.vx); }
+      if (h.y < m) { h.y = m; h.vy = Math.abs(h.vy); }
+      if (h.y > H - m) { h.y = H - m; h.vy = -Math.abs(h.vy); }
+    }
+  }
+
+  function collidePaperWalls() {
+    const thick = blob.r + 7;
+    for (const w of walls) {
+      const n = nearestOnSegment(w.x1, w.y1, w.x2, w.y2, blob.x, blob.y);
+      if (n.d >= thick || n.d < 0.0001) continue;
+      const nx = (blob.x - n.x) / n.d;
+      const ny = (blob.y - n.y) / n.d;
+      blob.x = n.x + nx * thick;
+      blob.y = n.y + ny * thick;
+      const vn = blob.vx * nx + blob.vy * ny;
+      if (vn < 0) {
+        blob.vx -= 1.75 * vn * nx;
+        blob.vy -= 1.75 * vn * ny;
+      }
+    }
+  }
+
   function stepPhysics(dt) {
     // wells age (even while drawing)
     for (let i = wells.length - 1; i >= 0; i--) {
@@ -802,22 +1056,23 @@
       if (wells[i].life <= 0) wells.splice(i, 1);
     }
 
+    // Seal/patrol keep moving so timing layouts stay alive while you aim
+    stepMovers(dt);
+
     // While the finger is down: pause blot motion so you can finish the stroke.
     // Incomplete ink never pulls. Wells only act after lift (finalizeStroke).
     if (drawing) {
       blob.vx *= 0.85;
       blob.vy *= 0.85;
-      // soft hold - almost still so placement is intentional
       if (Math.hypot(blob.vx, blob.vy) < 12) {
         blob.vx = 0;
         blob.vy = 0;
       }
-      // time + trail still tick below; no well forces while drawing
       blob.wobble += dt * 4;
       blob.trail.push({ x: blob.x, y: blob.y, life: 0.3 });
       if (blob.trail.length > 18) blob.trail.shift();
       for (const t of blob.trail) t.life -= dt;
-      timeLeft -= dt * 0.35; // slow the clock a little while aiming (not free pause)
+      timeLeft -= dt * 0.35;
       if (timeLeft <= 0) {
         endLose("The ink dried.");
       }
@@ -834,12 +1089,14 @@
       ay += f.ay;
     }
 
-    // soft world gravity downward
+    // soft world gravity + wind (paper grain)
     ay += 22;
+    ax += wind.x;
+    ay += wind.y;
 
     // hazards: dry blots repel slightly and steal ink on touch
     for (const h of hazards) {
-      h.phase += dt * h.spin;
+      if (!h.patrol) h.phase += dt * h.spin;
       const d = dist(blob.x, blob.y, h.x, h.y);
       const minD = blob.r + h.r;
       if (d < minD + 40) {
@@ -860,7 +1117,6 @@
 
     blob.vx += ax * dt;
     blob.vy += ay * dt;
-    // Wet viscosity - responsive after lock, not cursor-glue
     const damp = Math.pow(0.96, dt * 60);
     blob.vx *= damp;
     blob.vy *= damp;
@@ -876,12 +1132,14 @@
     blob.wobble += dt * 6;
     blob.wet = clamp(blob.wet - dt * 0.02, 0.7, 1);
 
+    collidePaperWalls();
+
     // trail
     blob.trail.push({ x: blob.x, y: blob.y, life: 0.45 });
     if (blob.trail.length > 18) blob.trail.shift();
     for (const t of blob.trail) t.life -= dt;
 
-    // soft walls
+    // soft screen edges
     const m = blob.r + 4;
     if (blob.x < m) { blob.x = m; blob.vx = Math.abs(blob.vx) * 0.4; }
     if (blob.x > W - m) { blob.x = W - m; blob.vx = -Math.abs(blob.vx) * 0.4; }
@@ -894,7 +1152,6 @@
       endWin();
     }
 
-    // fail conditions
     timeLeft -= dt;
     if (timeLeft <= 0) {
       endLose("The ink dried.");
@@ -1058,19 +1315,66 @@
   function drawHazard(h) {
     const wob = Math.sin(h.phase * 3) * 1.5;
     ctx.beginPath();
-    ctx.fillStyle = "rgba(55,48,40,0.55)";
+    ctx.fillStyle = h.patrol ? "rgba(70,50,40,0.62)" : "rgba(55,48,40,0.55)";
     ctx.ellipse(h.x, h.y, h.r + wob, h.r * 0.85 - wob * 0.3, h.phase, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.strokeStyle = "rgba(30,24,18,0.35)";
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = h.patrol ? "rgba(120,60,40,0.4)" : "rgba(30,24,18,0.35)";
+    ctx.lineWidth = h.patrol ? 2 : 1.5;
     ctx.ellipse(h.x, h.y, h.r + wob, h.r * 0.85, h.phase, 0, Math.PI * 2);
     ctx.stroke();
-    // cracked dry center
     ctx.beginPath();
     ctx.fillStyle = "rgba(90,80,70,0.35)";
     ctx.arc(h.x - 2, h.y - 2, h.r * 0.35, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  function drawWalls() {
+    for (const w of walls) {
+      ctx.save();
+      ctx.lineCap = "round";
+      // paper fold shadow
+      ctx.strokeStyle = "rgba(90,70,40,0.18)";
+      ctx.lineWidth = 16;
+      ctx.beginPath();
+      ctx.moveTo(w.x1, w.y1);
+      ctx.lineTo(w.x2, w.y2);
+      ctx.stroke();
+      // crease
+      ctx.strokeStyle = "rgba(42,34,24,0.55)";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(w.x1, w.y1);
+      ctx.lineTo(w.x2, w.y2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,245,230,0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(w.x1, w.y1);
+      ctx.lineTo(w.x2, w.y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawWindHints() {
+    if (!wind || (Math.abs(wind.x) < 1 && Math.abs(wind.y) < 1)) return;
+    const mag = Math.hypot(wind.x, wind.y);
+    if (mag < 8) return;
+    ctx.save();
+    ctx.strokeStyle = "rgba(90,70,40,0.14)";
+    ctx.lineWidth = 1.5;
+    const ux = wind.x / mag;
+    const uy = wind.y / mag;
+    for (let i = 0; i < 6; i++) {
+      const x = 50 + i * 55;
+      const y = 120 + (i % 3) * 90;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + ux * 28, y + uy * 28);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawParticles(dt) {
@@ -1143,6 +1447,9 @@
       ctx.stroke();
       ctx.restore();
     }
+
+    drawWalls();
+    drawWindHints();
 
     for (const h of hazards) drawHazard(h);
 
