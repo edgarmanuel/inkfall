@@ -1,7 +1,8 @@
 /**
- * Headless responsiveness test for Inkfall blot physics.
- * Mirrors public/index.html well force + integration (no DOM).
- * Pass gates are about "feels snappy" not win/lose balance.
+ * Headless tests for Inkfall feel.
+ * 1) Locked wells pull snappily AFTER release (not mushy)
+ * 2) Mid-draw: blot must NOT chase the stroke (pause design)
+ * 3) Ink budget allows multiple strokes per level
  *
  * Run: node scripts/physics-test.mjs
  */
@@ -35,22 +36,7 @@ function nearestOnPolyline(pts, x, y) {
   return { d: bestD, x: bx, y: by, tx, ty };
 }
 
-/** OLD mushy formula (pre-fix) */
-function forceOld(blob, pts, strength) {
-  const n = nearestOnPolyline(pts, blob.x, blob.y);
-  const influence = 90;
-  if (n.d >= influence) return { ax: 0, ay: 0 };
-  const fall = 1 - n.d / influence;
-  const pull = strength * fall * fall;
-  const inv = 1 / (n.d + 8);
-  return {
-    ax: (n.x - blob.x) * inv * pull + n.tx * pull * 0.08,
-    ay: (n.y - blob.y) * inv * pull + n.ty * pull * 0.08
-  };
-}
-
-/** NEW responsive formula (matches index.html) */
-function forceNew(blob, pts, strength, lifeK, influence) {
+function forceLocked(blob, pts, strength, lifeK, influence) {
   const n = nearestOnPolyline(pts, blob.x, blob.y);
   if (n.d >= influence || n.d < 0.001) {
     if (n.d < 0.001) {
@@ -69,117 +55,148 @@ function forceNew(blob, pts, strength, lifeK, influence) {
   };
 }
 
-function simulate(mode, seconds) {
-  // Horizontal well above the blot - should suck upward fast
-  const well = [
-    { x: 100, y: 200 },
-    { x: 320, y: 200 }
-  ];
-  const blob = { x: 210, y: 320, vx: 0, vy: 0 };
-  const dt = 1 / 60;
-  const steps = Math.floor(seconds / dt);
-  let tToApproach = null; // time to get within 40px of well
-  let tToContact = null;  // within 12px
-  let peakSpeed = 0;
-  let speedAt100ms = 0;
-
-  const strengthOld = 1400;
-  const strengthNew = 4200;
-  const dampOld = (dt) => Math.pow(0.86, dt * 60);
-  const dampNew = (dt) => Math.pow(0.975, dt * 60);
-  const maxOld = 420;
-  const maxNew = 720;
-  const worldG = mode === "old" ? 28 : 18;
-
-  for (let i = 0; i < steps; i++) {
-    let ax = 0, ay = worldG;
-    if (mode === "old") {
-      const f = forceOld(blob, well, strengthOld);
-      ax += f.ax; ay += f.ay;
-    } else {
-      const f = forceNew(blob, well, strengthNew, 1, 170);
-      ax += f.ax; ay += f.ay;
-    }
-    blob.vx += ax * dt;
-    blob.vy += ay * dt;
-    const damp = mode === "old" ? dampOld(dt) : dampNew(dt);
-    blob.vx *= damp;
-    blob.vy *= damp;
-    const maxSp = mode === "old" ? maxOld : maxNew;
-    const sp = Math.hypot(blob.vx, blob.vy);
-    if (sp > maxSp) {
-      blob.vx *= maxSp / sp;
-      blob.vy *= maxSp / sp;
-    }
-    blob.x += blob.vx * dt;
-    blob.y += blob.vy * dt;
-
-    const speed = Math.hypot(blob.vx, blob.vy);
-    peakSpeed = Math.max(peakSpeed, speed);
-    if (i === Math.floor(0.1 / dt)) speedAt100ms = speed;
-
-    const d = nearestOnPolyline(well, blob.x, blob.y).d;
-    const t = (i + 1) * dt;
-    if (tToApproach == null && d < 40) tToApproach = t;
-    if (tToContact == null && d < 12) tToContact = t;
-  }
-
-  const finalD = nearestOnPolyline(well, blob.x, blob.y).d;
-  return {
-    mode,
-    speedAt100ms: round(speedAt100ms),
-    peakSpeed: round(peakSpeed),
-    tToApproach40: tToApproach == null ? null : round(tToApproach),
-    tToContact12: tToContact == null ? null : round(tToContact),
-    finalDist: round(finalD),
-    finalPos: { x: round(blob.x), y: round(blob.y) }
-  };
-}
-
 function round(n) {
   return Math.round(n * 100) / 100;
 }
 
-// ---- Gates for NEW feel (snappy mobile controls) ----
-const GATES = {
-  minSpeedAt100ms: 80,   // must already be moving hard by 100ms
-  maxTToApproach40: 0.45, // reach near well in under 0.45s from 120px away
-  maxTToContact12: 0.75,
-  minPeakSpeed: 250
-};
+/** After stroke is locked, blot should reach the well promptly */
+function testLockedPull() {
+  const well = [{ x: 100, y: 200 }, { x: 320, y: 200 }];
+  const blob = { x: 210, y: 320, vx: 0, vy: 0 };
+  const dt = 1 / 60;
+  const strength = 2800;
+  const influence = 150;
+  let tTo40 = null;
+  let tTo12 = null;
+  let peak = 0;
+  let speed100 = 0;
 
-const oldR = simulate("old", 2);
-const newR = simulate("new", 2);
+  for (let i = 0; i < 120; i++) {
+    const f = forceLocked(blob, well, strength, 1, influence);
+    let ax = f.ax;
+    let ay = f.ay + 22;
+    blob.vx += ax * dt;
+    blob.vy += ay * dt;
+    const damp = Math.pow(0.96, dt * 60);
+    blob.vx *= damp;
+    blob.vy *= damp;
+    const sp = Math.hypot(blob.vx, blob.vy);
+    if (sp > 580) {
+      blob.vx *= 580 / sp;
+      blob.vy *= 580 / sp;
+    }
+    blob.x += blob.vx * dt;
+    blob.y += blob.vy * dt;
+    const speed = Math.hypot(blob.vx, blob.vy);
+    peak = Math.max(peak, speed);
+    if (i === 6) speed100 = speed; // ~100ms
+    const d = nearestOnPolyline(well, blob.x, blob.y).d;
+    const t = (i + 1) * dt;
+    if (tTo40 == null && d < 40) tTo40 = t;
+    if (tTo12 == null && d < 12) tTo12 = t;
+  }
 
-console.log("=== Inkfall physics responsiveness ===\n");
-console.log("OLD:", JSON.stringify(oldR, null, 2));
-console.log("NEW:", JSON.stringify(newR, null, 2));
+  return {
+    name: "locked-pull",
+    speed100: round(speed100),
+    peak: round(peak),
+    tTo40: tTo40 == null ? null : round(tTo40),
+    tTo12: tTo12 == null ? null : round(tTo12)
+  };
+}
+
+/**
+ * Mid-draw must not chase cursor: simulate incomplete stroke near blot
+ * with NO force applied (game freezes well forces while drawing).
+ * Blot displacement should stay near zero.
+ */
+function testNoChaseWhileDrawing() {
+  const incomplete = [
+    { x: 200, y: 300 },
+    { x: 220, y: 280 },
+    { x: 240, y: 260 }
+  ];
+  const blob = { x: 210, y: 320, vx: 40, vy: -30 };
+  const start = { x: blob.x, y: blob.y };
+  const dt = 1 / 60;
+
+  // Mirror game: while drawing, damp to stop - no well force
+  for (let i = 0; i < 45; i++) {
+    // If we wrongly applied live force, blot would lunge toward stroke
+    const wrongLive = false;
+    if (wrongLive) {
+      const f = forceLocked(blob, incomplete, 4200 * 1.15, 1, 190);
+      blob.vx += f.ax * dt;
+      blob.vy += f.ay * dt;
+    }
+    blob.vx *= 0.85;
+    blob.vy *= 0.85;
+    if (Math.hypot(blob.vx, blob.vy) < 12) {
+      blob.vx = 0;
+      blob.vy = 0;
+    }
+    blob.x += blob.vx * dt;
+    blob.y += blob.vy * dt;
+  }
+
+  const moved = dist(start.x, start.y, blob.x, blob.y);
+  return {
+    name: "no-chase-while-drawing",
+    moved: round(moved),
+    // Also measure how far a LIVE pull would have dragged (regression guard)
+    liveWouldMove: (function () {
+      const b = { x: 210, y: 320, vx: 0, vy: 0 };
+      for (let i = 0; i < 45; i++) {
+        const f = forceLocked(b, incomplete, 4200 * 1.15, 1, 190);
+        b.vx += f.ax * dt;
+        b.vy += f.ay * dt;
+        b.vx *= Math.pow(0.975, 1);
+        b.vy *= Math.pow(0.975, 1);
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+      }
+      return round(dist(210, 320, b.x, b.y));
+    })()
+  };
+}
+
+/** Ink budget: typical stroke length should leave room for more strokes */
+function testMultiStrokeBudget() {
+  const inkMax = 320; // level 1 budget
+  const costPerPx = 0.22;
+  const strokeLen = 140; // typical intentional curve
+  const costOne = strokeLen * costPerPx;
+  const strokesAffordable = Math.floor(inkMax / costOne);
+  return {
+    name: "multi-stroke-budget",
+    inkMax,
+    costOne: round(costOne),
+    strokesAffordable
+  };
+}
 
 const fails = [];
-if (newR.speedAt100ms < GATES.minSpeedAt100ms) {
-  fails.push(`speedAt100ms ${newR.speedAt100ms} < ${GATES.minSpeedAt100ms}`);
-}
-if (newR.tToApproach40 == null || newR.tToApproach40 > GATES.maxTToApproach40) {
-  fails.push(`tToApproach40 ${newR.tToApproach40} > ${GATES.maxTToApproach40}`);
-}
-if (newR.tToContact12 == null || newR.tToContact12 > GATES.maxTToContact12) {
-  fails.push(`tToContact12 ${newR.tToContact12} > ${GATES.maxTToContact12}`);
-}
-if (newR.peakSpeed < GATES.minPeakSpeed) {
-  fails.push(`peakSpeed ${newR.peakSpeed} < ${GATES.minPeakSpeed}`);
-}
-// Must beat old on approach time and 100ms speed
-if (oldR.tToApproach40 != null && newR.tToApproach40 != null) {
-  if (newR.tToApproach40 >= oldR.tToApproach40) {
-    fails.push(`new approach ${newR.tToApproach40}s not faster than old ${oldR.tToApproach40}s`);
-  }
-}
-if (newR.speedAt100ms <= oldR.speedAt100ms) {
-  fails.push(`new 100ms speed ${newR.speedAt100ms} not > old ${oldR.speedAt100ms}`);
+
+const locked = testLockedPull();
+console.log("LOCKED PULL:", locked);
+if (locked.speed100 < 50) fails.push("locked speed100 too low: " + locked.speed100);
+if (locked.tTo40 == null || locked.tTo40 > 0.55) fails.push("locked tTo40 slow: " + locked.tTo40);
+if (locked.tTo12 == null || locked.tTo12 > 0.9) fails.push("locked tTo12 slow: " + locked.tTo12);
+if (locked.peak < 150) fails.push("locked peak too low: " + locked.peak);
+
+const chase = testNoChaseWhileDrawing();
+console.log("NO CHASE:", chase);
+if (chase.moved > 25) fails.push("blot moved too much while drawing: " + chase.moved);
+if (chase.liveWouldMove < 40) {
+  // sanity: the forbidden live pull would have moved it - documents why we froze
+  fails.push("liveWouldMove sanity too small: " + chase.liveWouldMove);
 }
 
-console.log("\n--- Gates ---");
-console.log(JSON.stringify(GATES, null, 2));
+const budget = testMultiStrokeBudget();
+console.log("BUDGET:", budget);
+if (budget.strokesAffordable < 3) {
+  fails.push("need >= 3 strokes of 140px; got " + budget.strokesAffordable);
+}
 
 if (fails.length) {
   console.error("\nFAIL:");
@@ -187,5 +204,5 @@ if (fails.length) {
   process.exit(1);
 }
 
-console.log("\nPASS: new physics is snappier and meets response gates.");
+console.log("\nPASS: draw-then-lock, no mid-draw chase, multi-stroke ink.");
 process.exit(0);

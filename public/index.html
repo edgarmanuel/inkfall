@@ -240,8 +240,8 @@
       <h1>Ink<span>fall</span></h1>
       <div class="tag">wet ink · gravity wells · vermilion seal</div>
       <p class="blurb" id="blurb">
-        Draw temporary gravity with your finger.
-        Guide the living blot into the red seal before it dries.
+        Draw ink wells, then lift your finger to lock them.
+        Stack several strokes. Guide the blot into the red seal.
       </p>
       <div class="stats">
         <div>Best score<b id="menuBest">0</b></div>
@@ -404,7 +404,8 @@
   }
 
   function inkBudgetForLevel(lv) {
-    return clamp(180 + lv * 8, 180, 320);
+    // Multiple strokes per level - not a single-shot draw
+    return clamp(320 + lv * 12, 320, 480);
   }
   function timeForLevel(lv) {
     return clamp(13 - lv * 0.35, 7.5, 13);
@@ -485,11 +486,11 @@
     inkBar.style.transform = "scaleX(" + clamp(inkLeft / inkMax, 0, 1).toFixed(4) + ")";
     timeBar.style.transform = "scaleX(" + clamp(timeLeft / timeMax, 0, 1).toFixed(4) + ")";
     if (hintTimer > 0 && !firstStrokeDone) {
-      hintEl.textContent = "Draw a wet stroke — gravity pulls the blot";
+      hintEl.textContent = "Draw, then lift — the well locks when you release";
     } else if (level >= 3 && hazards.length) {
       hintEl.textContent = "Avoid dry blots — they drink your ink";
     } else {
-      hintEl.textContent = "Short curves steer · lift finger to lock the well";
+      hintEl.textContent = "Multiple strokes OK · ink bar is your budget";
     }
   }
 
@@ -645,14 +646,15 @@
     const last = drawing.pts[drawing.pts.length - 1];
     const d = dist(last.x, last.y, p.x, p.y);
     if (d < 3) return;
-    const cost = d * 0.55;
+    // Cheap enough for 3-6 strokes per level (not one-try)
+    const cost = d * 0.22;
     if (inkLeft <= 0) {
       finalizeStroke();
       return;
     }
     inkLeft = Math.max(0, inkLeft - cost);
     drawing.pts.push({ x: p.x, y: p.y, t: performance.now() });
-    if (Math.random() < 0.15) spawnDrip(p.x, p.y);
+    if (Math.random() < 0.08) spawnDrip(p.x, p.y);
     updateHud();
   }
 
@@ -663,8 +665,8 @@
   }
 
   function wellStrength() {
-    // Strong snap pull - tuned via scripts/physics-test.mjs
-    return 4200 + level * 80;
+    // Locked wells only (no mid-draw pull). Tuned via scripts/physics-test.mjs
+    return 2800 + level * 50;
   }
 
   function finalizeStroke() {
@@ -672,8 +674,8 @@
       drawing = null;
       return;
     }
-    // Build well segments with lifetime
-    const life = clamp(3.4 + drawing.pts.length * 0.02, 3.4, 6.5);
+    // Lock well on release - blot reacts only after you finish the stroke
+    const life = clamp(4.2 + drawing.pts.length * 0.025, 4.2, 7.5);
     const strength = wellStrength();
     wells.push({
       pts: drawing.pts.map((p) => ({ x: p.x, y: p.y })),
@@ -682,21 +684,23 @@
       strength,
       width: 12
     });
-    // Small snap impulse toward the stroke so the blot "hears" the brush
-    if (blob && drawing.pts.length >= 2) {
-      const n = nearestOnPolyline(drawing.pts, blob.x, blob.y);
-      if (n.d < 180 && n.d > 1) {
-        const k = clamp(1 - n.d / 180, 0.15, 1) * 220;
-        blob.vx += ((n.x - blob.x) / n.d) * k;
-        blob.vy += ((n.y - blob.y) / n.d) * k;
-      }
-    }
+    // No snap impulse - player places ink first, then physics owns the blot
     drawing = null;
     beep(240, 0.06, "triangle", 0.04);
     if (inkLeft < inkMax * 0.2) {
       floatTexts.push({
         x: blob.x, y: blob.y - 24,
         text: "ink low", life: 0.9, vy: -20, color: "#5a4030"
+      });
+    } else if (inkLeft > inkMax * 0.35) {
+      // Nudge that more strokes are available
+      floatTexts.push({
+        x: goal ? goal.x : W * 0.5,
+        y: (goal ? goal.y : 80) + 36,
+        text: "well locked",
+        life: 0.7,
+        vy: -16,
+        color: "#5a4030"
       });
     }
   }
@@ -792,30 +796,46 @@
   }
 
   function stepPhysics(dt) {
-    // wells age
+    // wells age (even while drawing)
     for (let i = wells.length - 1; i >= 0; i--) {
       wells[i].life -= dt;
       if (wells[i].life <= 0) wells.splice(i, 1);
     }
 
-    // gravity from wells + LIVE stroke while drawing (was mouse-up only = mushy)
+    // While the finger is down: pause blot motion so you can finish the stroke.
+    // Incomplete ink never pulls. Wells only act after lift (finalizeStroke).
+    if (drawing) {
+      blob.vx *= 0.85;
+      blob.vy *= 0.85;
+      // soft hold - almost still so placement is intentional
+      if (Math.hypot(blob.vx, blob.vy) < 12) {
+        blob.vx = 0;
+        blob.vy = 0;
+      }
+      // time + trail still tick below; no well forces while drawing
+      blob.wobble += dt * 4;
+      blob.trail.push({ x: blob.x, y: blob.y, life: 0.3 });
+      if (blob.trail.length > 18) blob.trail.shift();
+      for (const t of blob.trail) t.life -= dt;
+      timeLeft -= dt * 0.35; // slow the clock a little while aiming (not free pause)
+      if (timeLeft <= 0) {
+        endLose("The ink dried.");
+      }
+      return;
+    }
+
+    // gravity from LOCKED wells only
     let ax = 0, ay = 0;
-    const influence = 170;
+    const influence = 150;
     for (const w of wells) {
-      const lifeK = 0.35 + 0.65 * (w.life / w.maxLife); // stay useful while drying
+      const lifeK = 0.4 + 0.6 * (w.life / w.maxLife);
       const f = accumulateWellForce(w.pts, w.strength, lifeK, influence);
       ax += f.ax;
       ay += f.ay;
     }
-    if (drawing && drawing.pts.length >= 2) {
-      // Active brush pulls harder so drawing feels instant
-      const f = accumulateWellForce(drawing.pts, wellStrength() * 1.15, 1, influence + 20);
-      ax += f.ax;
-      ay += f.ay;
-    }
 
-    // soft world gravity downward (kept mild so wells own the feel)
-    ay += 18;
+    // soft world gravity downward
+    ay += 22;
 
     // hazards: dry blots repel slightly and steal ink on touch
     for (const h of hazards) {
@@ -840,13 +860,12 @@
 
     blob.vx += ax * dt;
     blob.vy += ay * dt;
-    // Light viscosity (was 0.86/frame ~ mush). Keep a wet feel without lag.
-    const damp = Math.pow(0.975, dt * 60);
+    // Wet viscosity - responsive after lock, not cursor-glue
+    const damp = Math.pow(0.96, dt * 60);
     blob.vx *= damp;
     blob.vy *= damp;
-    // speed cap - higher so snappy corrections land
     const sp = Math.hypot(blob.vx, blob.vy);
-    const maxSp = 720;
+    const maxSp = 580;
     if (sp > maxSp) {
       blob.vx *= maxSp / sp;
       blob.vy *= maxSp / sp;
