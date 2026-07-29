@@ -51,7 +51,7 @@ best score, Vercel static deploy, optional `scripts/*-test.mjs` for feel gates.
 ## 4. Ink Gravity / Inkfall - SHIPPED
 
 - **Product name:** Inkfall
-- **Live:** https://inkfall-swart.vercel.app
+- **Live:** https://inkfall.egaimanuel.tech
 - **Repo:** https://github.com/edgarmanuel/inkfall
 - **Vibe locked:** A-amped wet ink on warm paper + vermilion seal; success-only cyan rim
 - **Host:** Vercel

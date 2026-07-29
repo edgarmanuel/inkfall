@@ -67,7 +67,7 @@ keep this pattern when building Void Parry / Orbit Snap / any short-session game
 
 **Operator:** install PWA on Android Chrome and smoke-test.
 **Optional later:** Capacitor wrapper for Play Store APK.
-Web live: https://inkfall-swart.vercel.app
+Web live: https://inkfall.egaimanuel.tech
 
 ## Next game (separate product)
 

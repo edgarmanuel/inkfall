@@ -22,13 +22,14 @@ npx vercel ./public --yes --prod
 
 Deploys the static `public` folder as the site root.
 
-**Live:** https://inkfall-swart.vercel.app
+**Live:** https://inkfall.egaimanuel.tech  
+(fallback: https://inkfall-swart.vercel.app)
 
 ## Install on Android (Chrome - recommended)
 
 Inkfall is a Progressive Web App. No Play Store required.
 
-1. Open **https://inkfall-swart.vercel.app** in **Chrome** on your phone
+1. Open **https://inkfall.egaimanuel.tech** in **Chrome** on your phone
    (not Facebook / Instagram / Messenger in-app browsers).
 2. Wait a second (or tap Play once) so the service worker can register.
 3. Chrome menu (three dots, top-right) -> **Install app**
@@ -50,13 +51,18 @@ Not the default path. PWA install is the supported Android path for now.
 ## FB caption (paste-ready)
 
 ```
-I made a tiny game you can play in the browser.
+I still had 40% left of my weekly Grok limit. So I asked it to build games for me in under two hours.
 
-Draw wet ink strokes - they pull a living blot like gravity.
-Get it into the red seal before the page dries.
+I got one done in under an hour.
+
+That is how easy building with AI has gotten. You describe the feel, iterate while you play, and ship a real game people can open on their phone - no big team, no long timeline.
+
+Inkfall: draw wet ink strokes. They pull a living blot like gravity. Lift your finger to lock a well. Stack strokes if you need to. Guide it into the red seal before the page dries.
+
+Works in the browser. On Android Chrome: menu (three dots) -> Install app / Add to Home screen.
 
 I scored _____. Beat me:
-[your Vercel URL]
+https://inkfall.egaimanuel.tech
 ```
 
 ## Controls
