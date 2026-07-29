@@ -662,21 +662,35 @@
     finalizeStroke();
   }
 
+  function wellStrength() {
+    // Strong snap pull - tuned via scripts/physics-test.mjs
+    return 4200 + level * 80;
+  }
+
   function finalizeStroke() {
     if (!drawing || drawing.pts.length < 2) {
       drawing = null;
       return;
     }
     // Build well segments with lifetime
-    const life = clamp(2.8 + drawing.pts.length * 0.015, 2.8, 5.5);
-    const strength = 1400 + level * 40;
+    const life = clamp(3.4 + drawing.pts.length * 0.02, 3.4, 6.5);
+    const strength = wellStrength();
     wells.push({
       pts: drawing.pts.map((p) => ({ x: p.x, y: p.y })),
       life,
       maxLife: life,
       strength,
-      width: 11
+      width: 12
     });
+    // Small snap impulse toward the stroke so the blot "hears" the brush
+    if (blob && drawing.pts.length >= 2) {
+      const n = nearestOnPolyline(drawing.pts, blob.x, blob.y);
+      if (n.d < 180 && n.d > 1) {
+        const k = clamp(1 - n.d / 180, 0.15, 1) * 220;
+        blob.vx += ((n.x - blob.x) / n.d) * k;
+        blob.vy += ((n.y - blob.y) / n.d) * k;
+      }
+    }
     drawing = null;
     beep(240, 0.06, "triangle", 0.04);
     if (inkLeft < inkMax * 0.2) {
@@ -754,6 +768,29 @@
     return { d: bestD, x: bx, y: by, tx, ty };
   }
 
+  function accumulateWellForce(pts, strength, lifeK, influence) {
+    const n = nearestOnPolyline(pts, blob.x, blob.y);
+    if (n.d >= influence || n.d < 0.001) {
+      // On the stroke: ride along it (steering) instead of zeroing out
+      if (n.d < 0.001) {
+        return { ax: n.tx * strength * 0.12 * lifeK, ay: n.ty * strength * 0.12 * lifeK, d: n.d };
+      }
+      return { ax: 0, ay: 0, d: n.d };
+    }
+    // Linear falloff (was fall^2 - felt dead past short range)
+    const fall = 1 - n.d / influence;
+    const pull = strength * fall * lifeK;
+    const inv = 1 / n.d;
+    const ux = (n.x - blob.x) * inv;
+    const uy = (n.y - blob.y) * inv;
+    // Radial suck + stronger along-stroke current (responsive steering)
+    return {
+      ax: ux * pull + n.tx * pull * 0.22,
+      ay: uy * pull + n.ty * pull * 0.22,
+      d: n.d
+    };
+  }
+
   function stepPhysics(dt) {
     // wells age
     for (let i = wells.length - 1; i >= 0; i--) {
@@ -761,28 +798,24 @@
       if (wells[i].life <= 0) wells.splice(i, 1);
     }
 
-    // gravity from wells
+    // gravity from wells + LIVE stroke while drawing (was mouse-up only = mushy)
     let ax = 0, ay = 0;
+    const influence = 170;
     for (const w of wells) {
-      const n = nearestOnPolyline(w.pts, blob.x, blob.y);
-      const influence = 90;
-      if (n.d < influence) {
-        const fall = 1 - n.d / influence;
-        const lifeK = w.life / w.maxLife;
-        const pull = w.strength * fall * fall * lifeK;
-        const dx = n.x - blob.x;
-        const dy = n.y - blob.y;
-        const inv = 1 / (n.d + 8);
-        ax += dx * inv * pull;
-        ay += dy * inv * pull;
-        // slight along-stroke current
-        ax += n.tx * pull * 0.08;
-        ay += n.ty * pull * 0.08;
-      }
+      const lifeK = 0.35 + 0.65 * (w.life / w.maxLife); // stay useful while drying
+      const f = accumulateWellForce(w.pts, w.strength, lifeK, influence);
+      ax += f.ax;
+      ay += f.ay;
+    }
+    if (drawing && drawing.pts.length >= 2) {
+      // Active brush pulls harder so drawing feels instant
+      const f = accumulateWellForce(drawing.pts, wellStrength() * 1.15, 1, influence + 20);
+      ax += f.ax;
+      ay += f.ay;
     }
 
-    // soft world gravity downward (paper world)
-    ay += 28;
+    // soft world gravity downward (kept mild so wells own the feel)
+    ay += 18;
 
     // hazards: dry blots repel slightly and steal ink on touch
     for (const h of hazards) {
@@ -799,21 +832,21 @@
       }
       if (d < minD * 0.92) {
         inkLeft = Math.max(0, inkLeft - 35 * dt);
-        blob.vx *= 0.92;
-        blob.vy *= 0.92;
+        blob.vx *= 0.94;
+        blob.vy *= 0.94;
         if (Math.random() < 0.2) spawnDrip(blob.x, blob.y);
       }
     }
 
     blob.vx += ax * dt;
     blob.vy += ay * dt;
-    // damping — wet ink viscosity
-    const damp = Math.pow(0.86, dt * 60);
+    // Light viscosity (was 0.86/frame ~ mush). Keep a wet feel without lag.
+    const damp = Math.pow(0.975, dt * 60);
     blob.vx *= damp;
     blob.vy *= damp;
-    // speed cap
+    // speed cap - higher so snappy corrections land
     const sp = Math.hypot(blob.vx, blob.vy);
-    const maxSp = 420;
+    const maxSp = 720;
     if (sp > maxSp) {
       blob.vx *= maxSp / sp;
       blob.vy *= maxSp / sp;
