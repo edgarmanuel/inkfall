@@ -42,10 +42,20 @@ keep this pattern when building Void Parry / Orbit Snap / any short-session game
 - GitHub public repo, SESSION_HANDOFF + options bank for low-token resume
 - FB personal: score challenge link, not tech resume framing
 
+## Ship pattern (Android)
+
+- **PWA first** (done): `manifest.webmanifest` + `sw.js` + 192/512 + maskable PNGs under `public/icons/`
+- Deploy root is **`public/`** - keep `vercel.json` there (not repo root) so headers apply
+- Header order: catch-all first, then specific SW/manifest/icons (last match wins on Vercel)
+- SW: network-first navigations, cache-first assets; bump `CACHE` in `sw.js` when precache list changes
+- Install steps: README -> Chrome on Android -> Install app / Add to Home screen
+- Capacitor/Play APK only if store listing needed
+
 ## Next session (this product)
 
-**Android deploy** - wrap or installable path for phone (PWA and/or Capacitor).
-Web is already live: https://inkfall-swart.vercel.app
+**Operator:** install PWA on Android Chrome and smoke-test.
+**Optional later:** Capacitor wrapper for Play Store APK.
+Web live: https://inkfall-swart.vercel.app
 
 ## Next game (separate product)
 

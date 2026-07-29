@@ -17,10 +17,32 @@ Open `http://localhost:3456`.
 
 ```bash
 cd C:\Projects\inkfall
-npx vercel ./public --yes
+npx vercel ./public --yes --prod
 ```
 
 Deploys the static `public` folder as the site root.
+
+**Live:** https://inkfall-swart.vercel.app
+
+## Install on Android (PWA)
+
+Inkfall is a Progressive Web App. No Play Store required.
+
+1. Open **https://inkfall-swart.vercel.app** in **Chrome** on your phone.
+2. Play once (or wait a second) so the service worker registers.
+3. Chrome menu (three dots) -> **Install app** (or **Add to Home screen**).
+4. Launch from the home-screen icon - full-screen, no browser chrome.
+
+**Tips**
+
+- Use Chrome (not in-app browsers like Instagram/FB WebView).
+- If Install is missing: clear site data, reload, wait a few seconds, try again.
+- Offline: the shell is cached after first visit; play without network once installed.
+- Updates: reopen the app after a deploy; it fetches a fresh `index.html` when online.
+
+### Capacitor / Play Store APK (optional later)
+
+PWA covers install-and-play. For a signed Play listing, wrap `public/` with Capacitor + Android Studio. Not required for day-to-day Android play.
 
 ## FB caption (paste-ready)
 

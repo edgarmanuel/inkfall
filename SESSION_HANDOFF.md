@@ -2,8 +2,8 @@
 
 ## State
 
-- Date: 2026-07-30 (**session closed ~130k tokens**)
-- Game: **Inkfall** - playable web
+- Date: 2026-07-30 (**Android PWA shipped**)
+- Game: **Inkfall** - playable web + installable PWA
 - Live: **https://inkfall-swart.vercel.app**
 - Repo: **https://github.com/edgarmanuel/inkfall** (main)
 - Operator sign-off: **level design is great** - laws in `docs/LEARNINGS.md`
@@ -15,6 +15,7 @@
 - Level **archetypes** (gates, wind, patrol, moving seal, gauntlet every 5, ...)
 - Feel + variety tests under `scripts/`
 - Options bank for follow-on games
+- **Android PWA** - manifest + SW + icons; install from Chrome home screen
 
 ## Carry forward (next game)
 
@@ -28,16 +29,15 @@ Banked games: **`docs/GAME_OPTIONS_BANK.md`** (Void Parry preferred next product
 
 ## Exact next action (NEW SESSION - low token)
 
-**Goal: deploy Inkfall on Android** (installable or store-ready path).
+**Goal: operator smoke-test install on Android** (you do this on phone).
 
-1. Open this handoff + `docs/LEARNINGS.md` only (do not reload full research chat)
-2. Research/implement one path (prefer order):
-   - **A)** PWA (manifest + service worker + Add to Home Screen) - fastest
-   - **B)** Capacitor wrapper around `public/` - real APK / Play-shaped
-3. Test on operator Android Chrome / installed icon
-4. Commit, push, redeploy if web assets change; document install steps in README
+1. Chrome -> https://inkfall-swart.vercel.app
+2. Menu (three dots) -> **Install app** / **Add to Home screen**
+3. Launch icon; confirm full-screen + play feels right (draw-then-lock)
 
-**Out of scope for that session unless asked:** new game (Void Parry), FB post body.
+**Optional later (only if asked):** Capacitor APK / Play Store wrap of `public/`.
+
+**Out of scope unless asked:** new game (Void Parry), FB post body.
 
 ## Feel law (do not regress)
 
