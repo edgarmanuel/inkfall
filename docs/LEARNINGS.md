@@ -33,6 +33,18 @@ keep this pattern when building Void Parry / Orbit Snap / any short-session game
 
 - tutorial / dry lane / wall_gate / same_side / moving_seal / wind_drift
 - patrol / corridor / pinch / diagonal folds / bounce_start / gauntlet
+- thirst / smear / burst (adversary *verbs*, not just more dots)
+
+**Adversary verbs (why dry patrol felt weak):** same geometry + same effect
+(repel + light ink steal) reads as "furniture." Give each kind a different verb:
+
+| Kind | Verb |
+|---|---|
+| dry | soft repel + light ink steal |
+| patrol | moves + stronger push |
+| thirst | drinks locked wells + heavy ink steal |
+| smear | sticky attract (pulls the blot) |
+| burst | contact knockback with cooldown |
 
 **Do not:** scale only time-down + hazard-count-up. That plateaus fast.
 

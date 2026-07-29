@@ -9,8 +9,9 @@ function pickArchetype(lv) {
   if (lv % 5 === 0) return "gauntlet";
   const pool = [
     "moving_seal", "patrol", "corridor", "same_side", "wind_drift",
-    "pinch", "diagonal", "bounce_start", "wall_gate", "dry",
-    "patrol", "pinch", "same_side", "moving_seal", "corridor"
+    "pinch", "thirst", "diagonal", "bounce_start", "wall_gate",
+    "smear", "dry", "burst", "patrol", "same_side",
+    "moving_seal", "corridor", "thirst"
   ];
   let n = 0;
   for (let i = 1; i <= lv; i++) {
@@ -41,7 +42,7 @@ console.log("Counts:", counts);
 console.log("Max consecutive same:", maxRun);
 
 const fails = [];
-if (unique.size < 8) fails.push("need >= 8 distinct archetypes in first 30, got " + unique.size);
+if (unique.size < 10) fails.push("need >= 10 distinct archetypes in first 30, got " + unique.size);
 if (maxRun > 2) fails.push("too many consecutive same archetype: " + maxRun);
 if (labels[0] !== "tutorial" || labels[1] !== "tutorial") fails.push("lv1-2 should be tutorial");
 if (labels[2] !== "dry") fails.push("lv3 should introduce dry");
@@ -50,6 +51,10 @@ if (labels[4] !== "gauntlet" || labels[9] !== "gauntlet") fails.push("every 5th 
 const mid = labels.slice(9, 20);
 const midDry = mid.filter((a) => a === "dry").length;
 if (midDry > 3) fails.push("mid levels too dry-heavy: " + midDry);
+// New adversary archetypes should appear in first 30
+for (const need of ["thirst", "smear", "burst"]) {
+  if (!unique.has(need)) fails.push("missing archetype: " + need);
+}
 
 if (fails.length) {
   console.error("FAIL:", fails);

@@ -24,25 +24,28 @@ Deploys the static `public` folder as the site root.
 
 **Live:** https://inkfall-swart.vercel.app
 
-## Install on Android (PWA)
+## Install on Android (Chrome - recommended)
 
 Inkfall is a Progressive Web App. No Play Store required.
 
-1. Open **https://inkfall-swart.vercel.app** in **Chrome** on your phone.
-2. Play once (or wait a second) so the service worker registers.
-3. Chrome menu (three dots) -> **Install app** (or **Add to Home screen**).
-4. Launch from the home-screen icon - full-screen, no browser chrome.
+1. Open **https://inkfall-swart.vercel.app** in **Chrome** on your phone
+   (not Facebook / Instagram / Messenger in-app browsers).
+2. Wait a second (or tap Play once) so the service worker can register.
+3. Chrome menu (three dots, top-right) -> **Install app**
+   or **Add to Home screen** / **Add to phone**.
+4. Confirm. Open the new **Inkfall** icon for full-screen play.
 
 **Tips**
 
-- Use Chrome (not in-app browsers like Instagram/FB WebView).
-- If Install is missing: clear site data, reload, wait a few seconds, try again.
-- Offline: the shell is cached after first visit; play without network once installed.
-- Updates: reopen the app after a deploy; it fetches a fresh `index.html` when online.
+- If you do not see Install: you are likely in an in-app browser. Copy the link,
+  open Chrome, paste it, then try again.
+- Offline: after first visit the shell is cached.
+- Updates: reopen when online after a deploy.
+- Music: bottom-right **M** mutes ambient music (SFX still play).
 
-### Capacitor / Play Store APK (optional later)
+### Capacitor / Play Store APK
 
-PWA covers install-and-play. For a signed Play listing, wrap `public/` with Capacitor + Android Studio. Not required for day-to-day Android play.
+Not the default path. PWA install is the supported Android path for now.
 
 ## FB caption (paste-ready)
 

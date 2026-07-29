@@ -224,6 +224,28 @@
       opacity: 0.55;
       line-height: 1.4;
     }
+    .fine b { opacity: 0.9; color: var(--ink); font-weight: 700; }
+    #muteBtn {
+      position: fixed;
+      right: max(10px, env(safe-area-inset-right));
+      bottom: max(10px, env(safe-area-inset-bottom));
+      z-index: 20;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid rgba(42,34,24,0.18);
+      background: rgba(232, 220, 200, 0.88);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 10px rgba(60,40,20,0.12);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ink);
+      cursor: pointer;
+      line-height: 1;
+      pointer-events: auto;
+    }
+    #muteBtn:active { transform: scale(0.96); }
+    #muteBtn.off { opacity: 0.55; }
   </style>
 </head>
 <body>
@@ -240,6 +262,7 @@
     <div class="meter seal" title="Time" style="margin-top:5px"><i id="timeBar"></i></div>
     <div class="hint" id="hintEl">Draw a wet stroke — gravity pulls the blot</div>
   </div>
+  <button type="button" id="muteBtn" aria-label="Toggle music" title="Music">M</button>
   <div id="overlay">
     <div class="card" id="card">
       <div class="seal-mark">印</div>
@@ -255,7 +278,13 @@
       </div>
       <button class="cta" id="playBtn" type="button">Press the seal</button>
       <button class="ghost hidden" id="shareBtn" type="button" style="display:none">Copy score challenge</button>
-      <p class="fine">Tip: short curved strokes steer better than long lines.<br/>Desktop: click-drag · Esc restarts after fail</p>
+      <p class="fine">
+        Tip: short curved strokes steer better than long lines.<br/>
+        Desktop: click-drag · Esc restarts after fail<br/><br/>
+        <b>Install on Android (Chrome):</b><br/>
+        Open this page in Chrome -&gt; menu (three dots) -&gt; <b>Install app</b><br/>
+        or <b>Add to Home screen</b>. Launch from the icon for full screen.
+      </p>
     </div>
   </div>
   <script>
@@ -287,14 +316,20 @@
   menuBest.textContent = String(best);
   bestEl.textContent = String(best);
 
-  // ---------- Audio (tiny synth, no files) ----------
+  // ---------- Audio (tiny synth + ambient loop, no files) ----------
   let audioCtx = null;
+  let musicOn = true;
+  try { musicOn = localStorage.getItem("inkfall_music") !== "0"; } catch (_) {}
+  let music = null; // { master, droneOs, timer, nextNote }
+  const muteBtn = document.getElementById("muteBtn");
+
   function ensureAudio() {
     if (!audioCtx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (AC) audioCtx = new AC();
     }
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    if (musicOn) startMusic();
   }
   function beep(freq, dur, type, gain, slide) {
     if (!audioCtx) return;
@@ -324,6 +359,106 @@
     g.gain.value = gain || 0.12;
     src.connect(f); f.connect(g); g.connect(audioCtx.destination);
     src.start();
+  }
+
+  // Soft paper-room pad: low drone + sparse pentatonic plucks
+  const MUSIC_SCALE = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00];
+  function startMusic() {
+    if (!audioCtx || !musicOn || music) return;
+    const master = audioCtx.createGain();
+    master.gain.value = 0.0001;
+    const lp = audioCtx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 900;
+    lp.Q.value = 0.5;
+    master.connect(lp);
+    lp.connect(audioCtx.destination);
+    master.gain.exponentialRampToValueAtTime(0.045, audioCtx.currentTime + 1.2);
+
+    // two detuned drones (warm fifth)
+    const drones = [];
+    for (const [freq, type, g0] of [
+      [98.0, "sine", 0.55],
+      [146.83, "triangle", 0.22],
+      [196.0, "sine", 0.12]
+    ]) {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      g.gain.value = g0;
+      o.connect(g);
+      g.connect(master);
+      o.start();
+      drones.push({ o, g });
+    }
+
+    music = { master, lp, drones, step: 0, timer: null };
+    function pluck() {
+      if (!music || !audioCtx || !musicOn) return;
+      const t0 = audioCtx.currentTime;
+      const deg = MUSIC_SCALE[music.step % MUSIC_SCALE.length];
+      music.step += Math.random() < 0.35 ? 2 : 1;
+      // occasional rest
+      if (Math.random() < 0.18) {
+        music.timer = setTimeout(pluck, 900 + Math.random() * 700);
+        return;
+      }
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = Math.random() < 0.5 ? "sine" : "triangle";
+      o.frequency.setValueAtTime(deg, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.035, t0 + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
+      o.connect(g);
+      g.connect(music.master);
+      o.start(t0);
+      o.stop(t0 + 1.7);
+      music.timer = setTimeout(pluck, 1100 + Math.random() * 900);
+    }
+    music.timer = setTimeout(pluck, 600);
+  }
+  function stopMusic() {
+    if (!music) return;
+    if (music.timer) clearTimeout(music.timer);
+    try {
+      if (audioCtx) {
+        music.master.gain.cancelScheduledValues(audioCtx.currentTime);
+        music.master.gain.setValueAtTime(music.master.gain.value, audioCtx.currentTime);
+        music.master.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
+      }
+    } catch (_) {}
+    const old = music;
+    music = null;
+    setTimeout(() => {
+      for (const d of old.drones) {
+        try { d.o.stop(); } catch (_) {}
+      }
+    }, 300);
+  }
+  function refreshMuteBtn() {
+    if (!muteBtn) return;
+    muteBtn.textContent = musicOn ? "M" : "-";
+    muteBtn.classList.toggle("off", !musicOn);
+    muteBtn.title = musicOn ? "Mute music" : "Unmute music";
+    muteBtn.setAttribute("aria-label", musicOn ? "Mute music" : "Unmute music");
+  }
+  refreshMuteBtn();
+  if (muteBtn) {
+    muteBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      musicOn = !musicOn;
+      try { localStorage.setItem("inkfall_music", musicOn ? "1" : "0"); } catch (_) {}
+      refreshMuteBtn();
+      if (musicOn) {
+        ensureAudio();
+        startMusic();
+      } else {
+        stopMusic();
+      }
+    });
   }
 
   // ---------- Paper texture (baked once) ----------
@@ -422,6 +557,7 @@
   function timeForLevel(lv, arch) {
     let t = clamp(12.5 - lv * 0.12, 8.5, 12.5);
     if (arch === "moving_seal" || arch === "patrol") t += 1.5;
+    if (arch === "thirst" || arch === "smear" || arch === "burst") t += 1.2;
     if (arch === "pinch") t -= 1.0;
     if (arch === "gauntlet") t += 0.8;
     if (arch === "open" || arch === "tutorial") t += 1.2;
@@ -437,8 +573,9 @@
     // Full roster - every non-gauntlet slot walks the list so nothing is skipped for long
     const pool = [
       "moving_seal", "patrol", "corridor", "same_side", "wind_drift",
-      "pinch", "diagonal", "bounce_start", "wall_gate", "dry",
-      "patrol", "pinch", "same_side", "moving_seal", "corridor"
+      "pinch", "thirst", "diagonal", "bounce_start", "wall_gate",
+      "smear", "dry", "burst", "patrol", "same_side",
+      "moving_seal", "corridor", "thirst"
     ];
     // Count only non-special levels for index
     let n = 0;
@@ -476,26 +613,34 @@
     };
   }
 
-  function addStaticHazard(x, y, r) {
+  /**
+   * Hazard kinds (verbs, not just more dots):
+   * dry    - soft repel + light ink steal
+   * patrol - moves, stronger push on contact
+   * thirst - drinks locked wells nearby + heavy ink steal
+   * smear  - sticky attract (pulls the blot)
+   * burst  - contact knockback with cooldown
+   */
+  function addHazard(x, y, opts) {
+    opts = opts || {};
+    const kind = opts.kind || "dry";
     hazards.push({
       x: x, y: y,
-      r: r || rand(14, 22),
+      r: opts.r || rand(14, 22),
       phase: Math.random() * Math.PI * 2,
-      spin: rand(-0.6, 0.6),
-      vx: 0, vy: 0,
-      patrol: false
+      spin: rand(-0.8, 0.8),
+      vx: opts.vx || 0,
+      vy: opts.vy || 0,
+      patrol: !!opts.patrol || kind === "patrol",
+      kind: kind,
+      cd: 0
     });
   }
-
-  function addPatrolHazard(x, y, vx, vy, r) {
-    hazards.push({
-      x: x, y: y,
-      r: r || rand(16, 22),
-      phase: Math.random() * Math.PI * 2,
-      spin: rand(-1, 1),
-      vx: vx, vy: vy,
-      patrol: true
-    });
+  function addStaticHazard(x, y, r, kind) {
+    addHazard(x, y, { r: r, kind: kind || "dry", patrol: false });
+  }
+  function addPatrolHazard(x, y, vx, vy, r, kind) {
+    addHazard(x, y, { r: r, vx: vx, vy: vy, kind: kind || "patrol", patrol: true });
   }
 
   function clearApart(ax, ay, bx, by, minD) {
@@ -609,10 +754,48 @@
       blob = makeBlob(left + 10, bot - 20, 0, 0);
       goal = makeGoal(right - 20, top + 30, 26);
       const spd = 70 + level * 4;
-      addPatrolHazard(midX, H * 0.4, spd, 0, 18);
-      addPatrolHazard(W * 0.35, H * 0.55, 0, spd * 0.7, 16);
-      if (level >= 12) addPatrolHazard(W * 0.65, H * 0.5, -spd * 0.6, spd * 0.4, 15);
+      addPatrolHazard(midX, H * 0.4, spd, 0, 18, "patrol");
+      addPatrolHazard(W * 0.35, H * 0.55, 0, spd * 0.7, 16, "patrol");
+      if (level >= 12) addPatrolHazard(W * 0.65, H * 0.5, -spd * 0.6, spd * 0.4, 15, "burst");
       levelLabel = "patrol dry ink";
+    } else if (arch === "thirst") {
+      blob = makeBlob(side ? left + 10 : right - 10, bot - 20, 0, 0);
+      goal = makeGoal(side ? right - 25 : left + 25, top + 30, 26);
+      // Thirsty blots sit near the lane and drink your wells
+      addStaticHazard(
+        lerp(blob.x, goal.x, 0.4) + rand(-20, 20),
+        lerp(blob.y, goal.y, 0.4) + rand(-16, 16),
+        20, "thirst"
+      );
+      addStaticHazard(
+        lerp(blob.x, goal.x, 0.7) + rand(-24, 24),
+        lerp(blob.y, goal.y, 0.65) + rand(-18, 18),
+        17, "thirst"
+      );
+      if (level >= 11) {
+        addPatrolHazard(midX, midY, 50 + level * 2, 0, 16, "thirst");
+      }
+      levelLabel = "thirsty dry ink";
+    } else if (arch === "smear") {
+      blob = makeBlob(side ? left + 15 : right - 15, bot - 15, 0, 0);
+      goal = makeGoal(side ? right - 20 : left + 20, top + 40, 26);
+      // Sticky smear pulls the blot off-line - place wells to counter-pull
+      addStaticHazard(midX + rand(-30, 30), H * 0.42, 22, "smear");
+      addStaticHazard(
+        lerp(blob.x, goal.x, 0.55) + (side ? 40 : -40),
+        lerp(blob.y, goal.y, 0.5),
+        18, "smear"
+      );
+      if (level >= 10) addStaticHazard(midX, H * 0.62, 15, "dry");
+      levelLabel = "sticky smear";
+    } else if (arch === "burst") {
+      blob = makeBlob(left + 12, bot - 18, 0, 0);
+      goal = makeGoal(right - 22, top + 28, 25);
+      const spd = 55 + level * 3;
+      addPatrolHazard(W * 0.45, H * 0.48, spd, spd * 0.35, 17, "burst");
+      addStaticHazard(W * 0.62, H * 0.38, 16, "burst");
+      if (level >= 10) addPatrolHazard(W * 0.3, H * 0.58, -spd * 0.5, spd * 0.55, 15, "burst");
+      levelLabel = "cracked blots";
     } else if (arch === "corridor") {
       blob = makeBlob(midX, bot - 10, 0, 0);
       goal = makeGoal(midX + rand(-30, 30), top + 20, 25);
@@ -656,8 +839,10 @@
       goal.cy = goal.y;
       walls.push({ x1: midX - 10, y1: margin + 10, x2: midX - 10, y2: H * 0.42 });
       walls.push({ x1: midX + 30, y1: H * 0.48, x2: midX + 30, y2: H - margin });
-      addPatrolHazard(W * 0.4, H * 0.55, 80, 40, 17);
-      addStaticHazard(W * 0.7, H * 0.4, 16);
+      addPatrolHazard(W * 0.4, H * 0.55, 80, 40, 17, "patrol");
+      addStaticHazard(W * 0.7, H * 0.4, 16, "thirst");
+      addStaticHazard(W * 0.55, H * 0.62, 15, "smear");
+      if (level >= 15) addPatrolHazard(W * 0.28, H * 0.42, 40, -50, 14, "burst");
       levelLabel = "gauntlet";
     }
 
@@ -739,6 +924,7 @@
     let archBonus = 0;
     if (levelLabel === "gauntlet") archBonus = 40;
     else if (levelLabel === "tiny seal - long shot") archBonus = 25;
+    else if (levelLabel === "thirsty dry ink" || levelLabel === "sticky smear" || levelLabel === "cracked blots") archBonus = 22;
     else if (levelLabel === "seal on the move" || levelLabel === "patrol dry ink") archBonus = 20;
     else if (levelLabel === "thread the gate" || levelLabel === "narrow corridor") archBonus = 15;
     const gained = levelBonus + timeBonus + inkBonus + combo * 5 + archBonus;
@@ -1070,6 +1256,24 @@
     // Seal/patrol keep moving so timing layouts stay alive while you aim
     stepMovers(dt);
 
+    // Thirst blots always drink nearby locked wells (even while aiming)
+    for (const h of hazards) {
+      if (h.kind !== "thirst") continue;
+      for (const w of wells) {
+        if (!w.pts || w.pts.length < 1) continue;
+        let best = Infinity;
+        for (let i = 0; i < w.pts.length; i += Math.max(1, (w.pts.length / 6) | 0)) {
+          const p = w.pts[i];
+          const dd = dist(h.x, h.y, p.x, p.y);
+          if (dd < best) best = dd;
+        }
+        if (best < h.r + 58) {
+          w.life -= dt * 2.1;
+          if (Math.random() < 0.08) spawnDrip(h.x + rand(-4, 4), h.y + rand(-4, 4));
+        }
+      }
+    }
+
     // While the finger is down: pause blot motion so you can finish the stroke.
     // Incomplete ink never pulls. Wells only act after lift (finalizeStroke).
     if (drawing) {
@@ -1105,24 +1309,71 @@
     ax += wind.x;
     ay += wind.y;
 
-    // hazards: dry blots repel slightly and steal ink on touch
+    // hazards: kind-specific verbs (repel / attract / drink / knock)
     for (const h of hazards) {
+      if (h.cd > 0) h.cd -= dt;
       if (!h.patrol) h.phase += dt * h.spin;
       const d = dist(blob.x, blob.y, h.x, h.y);
       const minD = blob.r + h.r;
-      if (d < minD + 40) {
-        const fall = 1 - d / (minD + 40);
-        const dx = blob.x - h.x;
-        const dy = blob.y - h.y;
-        const inv = 1 / (d + 1);
-        ax += dx * inv * 500 * fall;
-        ay += dy * inv * 500 * fall;
-      }
-      if (d < minD * 0.92) {
-        inkLeft = Math.max(0, inkLeft - 35 * dt);
-        blob.vx *= 0.94;
-        blob.vy *= 0.94;
-        if (Math.random() < 0.2) spawnDrip(blob.x, blob.y);
+      const dx = blob.x - h.x;
+      const dy = blob.y - h.y;
+      const inv = 1 / (d + 1);
+      const kind = h.kind || (h.patrol ? "patrol" : "dry");
+
+      if (kind === "smear") {
+        // Sticky: pulls the blot in
+        if (d < minD + 72 && d > 0.5) {
+          const fall = 1 - d / (minD + 72);
+          ax -= dx * inv * 480 * fall;
+          ay -= dy * inv * 480 * fall;
+        }
+        if (d < minD * 0.95) {
+          inkLeft = Math.max(0, inkLeft - 22 * dt);
+          blob.vx *= 0.88;
+          blob.vy *= 0.88;
+          if (Math.random() < 0.25) spawnDrip(blob.x, blob.y);
+        }
+      } else if (kind === "thirst") {
+        // Mild keep-away + heavy ink steal on contact
+        if (d < minD + 48) {
+          const fall = 1 - d / (minD + 48);
+          ax += dx * inv * 320 * fall;
+          ay += dy * inv * 320 * fall;
+        }
+        if (d < minD * 0.95) {
+          inkLeft = Math.max(0, inkLeft - 70 * dt);
+          blob.vx *= 0.92;
+          blob.vy *= 0.92;
+          if (Math.random() < 0.3) spawnDrip(blob.x, blob.y);
+        }
+      } else if (kind === "burst") {
+        // Quiet until touch, then a hard knock
+        if (d < minD * 0.94 && h.cd <= 0) {
+          const kn = 340 / (d + 0.4);
+          blob.vx += dx * inv * kn;
+          blob.vy += dy * inv * kn;
+          h.cd = 1.15;
+          inkLeft = Math.max(0, inkLeft - 10);
+          spawnBurst(h.x, h.y, "#4a3028", 14, 2.4);
+          noiseBurst(0.08, 0.07);
+          beep(90, 0.07, "square", 0.03, 50);
+          shake = Math.max(shake, 5);
+        }
+      } else {
+        // dry / patrol: soft repel + light ink steal
+        const range = minD + (kind === "patrol" ? 48 : 40);
+        const force = kind === "patrol" ? 620 : 500;
+        if (d < range) {
+          const fall = 1 - d / range;
+          ax += dx * inv * force * fall;
+          ay += dy * inv * force * fall;
+        }
+        if (d < minD * 0.92) {
+          inkLeft = Math.max(0, inkLeft - (kind === "patrol" ? 42 : 35) * dt);
+          blob.vx *= 0.94;
+          blob.vy *= 0.94;
+          if (Math.random() < 0.2) spawnDrip(blob.x, blob.y);
+        }
       }
     }
 
@@ -1325,19 +1576,88 @@
 
   function drawHazard(h) {
     const wob = Math.sin(h.phase * 3) * 1.5;
+    const kind = h.kind || (h.patrol ? "patrol" : "dry");
+    const rx = h.r + wob;
+    const ry = h.r * 0.85 - wob * 0.3;
+
+    // Kind-colored body
+    let fill = "rgba(55,48,40,0.55)";
+    let stroke = "rgba(30,24,18,0.35)";
+    let lw = 1.5;
+    if (kind === "patrol") {
+      fill = "rgba(70,50,40,0.62)";
+      stroke = "rgba(120,60,40,0.45)";
+      lw = 2;
+    } else if (kind === "thirst") {
+      fill = "rgba(90,55,48,0.58)";
+      stroke = "rgba(160,70,55,0.5)";
+      lw = 2;
+    } else if (kind === "smear") {
+      fill = "rgba(110,75,40,0.55)";
+      stroke = "rgba(150,100,45,0.45)";
+      lw = 2;
+    } else if (kind === "burst") {
+      fill = "rgba(45,36,40,0.7)";
+      stroke = "rgba(150,80,60,0.55)";
+      lw = 2.2;
+    }
+
     ctx.beginPath();
-    ctx.fillStyle = h.patrol ? "rgba(70,50,40,0.62)" : "rgba(55,48,40,0.55)";
-    ctx.ellipse(h.x, h.y, h.r + wob, h.r * 0.85 - wob * 0.3, h.phase, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.ellipse(h.x, h.y, rx, ry, h.phase, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.strokeStyle = h.patrol ? "rgba(120,60,40,0.4)" : "rgba(30,24,18,0.35)";
-    ctx.lineWidth = h.patrol ? 2 : 1.5;
-    ctx.ellipse(h.x, h.y, h.r + wob, h.r * 0.85, h.phase, 0, Math.PI * 2);
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = lw;
+    ctx.ellipse(h.x, h.y, rx, ry, h.phase, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.fillStyle = "rgba(90,80,70,0.35)";
-    ctx.arc(h.x - 2, h.y - 2, h.r * 0.35, 0, Math.PI * 2);
-    ctx.fill();
+
+    // Kind marks (readable at a glance)
+    if (kind === "thirst") {
+      // hollow sip ring
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(220,140,120,0.45)";
+      ctx.lineWidth = 2;
+      ctx.arc(h.x, h.y, h.r * 0.45, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(40,20,18,0.35)";
+      ctx.arc(h.x, h.y, h.r * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (kind === "smear") {
+      // stretched sticky bead
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(160,110,50,0.35)";
+      ctx.ellipse(h.x + 3, h.y + 2, h.r * 0.55, h.r * 0.28, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(180,120,50,0.35)";
+      ctx.lineWidth = 1.5;
+      ctx.moveTo(h.x - h.r * 0.6, h.y);
+      ctx.quadraticCurveTo(h.x, h.y + h.r * 0.5, h.x + h.r * 0.6, h.y);
+      ctx.stroke();
+    } else if (kind === "burst") {
+      // crack lines + charged rim when ready
+      ctx.strokeStyle = h.cd > 0 ? "rgba(120,90,80,0.35)" : "rgba(220,120,80,0.55)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(h.x - h.r * 0.5, h.y - h.r * 0.15);
+      ctx.lineTo(h.x - h.r * 0.1, h.y + h.r * 0.1);
+      ctx.lineTo(h.x + h.r * 0.45, h.y - h.r * 0.35);
+      ctx.stroke();
+      if (h.cd <= 0) {
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(200,90,60,0.35)";
+        ctx.lineWidth = 2;
+        ctx.arc(h.x, h.y, h.r * 1.08 + Math.sin(h.phase * 4) * 1.2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else {
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(90,80,70,0.35)";
+      ctx.arc(h.x - 2, h.y - 2, h.r * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   function drawWalls() {
