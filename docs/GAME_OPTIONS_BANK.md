@@ -1,12 +1,12 @@
-# Game options bank (session 2026-07-30)
+# Game options bank (updated 2026-07-30 close)
 
-Sourced from the plan-before-build pick list for a **web + Android-browser**,
-**~2h**, **FB personal / non-AI engagement** game. Built under free-proof static
-HTML + Vercel.
+Sourced from the plan-before-build pick list, then updated after Inkfall ship.
+**Next default is no longer Void Parry** - operator chose bold 3D + bend loop.
 
 **Principal:** operator (Egai).  
-**Stack pattern proven by Inkfall:** single `public/index.html` canvas, localStorage
-best score, Vercel static deploy, optional `scripts/*-test.mjs` for feel gates.
+**Inkfall stack proven:** static canvas + Vercel + PWA + custom subdomain.  
+**Next stack target:** 3D web (Three.js first), high visual fidelity ladder,
+same domain pattern (`name.egaimanuel.tech`).
 
 ---
 
@@ -14,81 +14,70 @@ best score, Vercel static deploy, optional `scripts/*-test.mjs` for feel gates.
 
 | Status | Meaning |
 |---|---|
-| SHIPPED | Live product from this wave |
-| BANKED | Not built; fair game for a next 2h session |
-| DEFERRED | Weak under 2h or content-heavy; only if scoped thin |
+| SHIPPED | Live product |
+| BANKED | Not built; fair for a later session |
+| NEXT | Preferred next product |
+| DEFERRED | Weak under thin scope unless cut hard |
 
 ---
 
-## 1. Void Parry - BANKED (strong next pick)
+## 0. HABAGAT - NEXT (preferred)
 
-- **Loop:** One button. Parry the flash. Chain = score. Miss = die. Instant restart.
-- **FB hook:** "One button. I got to 47. Beat me."
-- **2h fit:** Excellent - time goes into feel + juice, not content.
-- **Wow:** Impact flashes, color pulses, hit-stop; few assets.
-- **Controls:** One thumb; Space / click on desktop.
-- **Risk:** Feels empty if juice is weak - budget juice first.
-- **Why bank it:** Best pure "one more try" after Inkfall's puzzle-draw pace.
+- **Full brief:** `docs/NEXT_HABAGAT.md`
+- **Loop:** Draw a 3D **wind ribbon** -> release locks the bend -> ride snappily.
+  Multi-try **breath** budget. Reach lantern / landing before breath dies.
+- **PH anchor:** Habagat / Amihan monsoon literacy + wet night-city identity;
+  diskarte multi-try; mobile short-session culture. No P2E.
+- **Airbender family:** gesture-commit elemental control (original IP only).
+- **Visual:** high-fidelity 3D targets (PBR wet streets, rain, neon, ribbons).
+- **FB hook:** "I bent the monsoon for ____. Beat me: habagat.egaimanuel.tech"
+- **First session:** Three.js spike only (ribbon + ride + breath + greybox).
+- **Why now:** operator remaining Grok budget + demand for bold fidelity after
+  Inkfall's 2D canvas success.
+
+---
+
+## 1. Void Parry - BANKED (thin / fast alternate)
+
+- **Loop:** One button. Parry the flash. Chain = score. Miss = die.
+- **When:** If Habagat spike stalls or operator wants a 2h palate cleanser.
+- **Why demoted:** Lower visual ambition than current mandate.
 
 ## 2. Orbit Snap - BANKED
 
-- **Loop:** Ship orbits a core; tap to reverse/boost; grab orbs; dodge radial hazards.
-- **FB hook:** "Circular chicken game - my high score is ___."
-- **2h fit:** Strong - one entity, simple geometry.
-- **Wow:** Trails + planet glow.
-- **Controls:** Tap / hold; left-right on desktop.
-- **Risk:** Orbit feel mush if physics soft - prefer fixed angular speed.
-- **Why bank it:** Distinct motion in the feed; still low content volume.
+- Circular chicken / orbit grab. Distinct motion; still low content.
 
-## 3. Last Courier - DEFERRED (thin-art only)
+## 3. Last Courier - DEFERRED
 
-- **Loop:** 3-lane swipe runner; avoid crashes; near-miss score.
-- **FB hook:** Familiar endless-runner.
-- **2h fit:** Weak - art + spawn tuning eat the clock.
-- **Only if:** Super-minimal shapes + one hero; no city tileset campaign.
-- **Why deferred:** Easy to ship a janky Subway clone under time pressure.
+- 3-lane runner. Art risk. Only super-minimal.
 
-## 4. Ink Gravity / Inkfall - SHIPPED
+## 4. Inkfall - SHIPPED
 
-- **Product name:** Inkfall
 - **Live:** https://inkfall.egaimanuel.tech
 - **Repo:** https://github.com/edgarmanuel/inkfall
-- **Vibe locked:** A-amped wet ink on warm paper + vermilion seal; success-only cyan rim
-- **Host:** Vercel
-- **Feel law (learned):** Draw-then-lock - pause blot while finger down; wells activate
-  on release only; multi-stroke ink budget (not one-shot).
-- **Path:** `C:\Projects\inkfall` - see SESSION_HANDOFF.md
+- Feel + archetype laws in `LEARNINGS.md`
 
-## 5. Bloom Relay - DEFERRED (or thin endless)
+## 5. Bloom Relay - DEFERRED
 
-- **Loop:** Chain adjacent glowing tiles under a timer; combos bloom the board.
-- **FB hook:** Pretty, casual, non-gamer friendly.
-- **2h fit:** Medium-weak without a strong twist; needs tile variety.
-- **Only if:** One endless mode, one palette, no garden meta.
-- **Why deferred:** Generic match risk; less "one more try" than 1-2.
+- Tile chain casual. Weak "one more try" vs 0-2.
 
 ---
 
-## Recommended order for "another one after Inkfall"
+## Recommended order
 
-1. **Void Parry** - fastest second ship; opposite skill fantasy (timing vs draw).
-2. **Orbit Snap** - if you want a different look in the feed.
-3. Bloom / Courier only with ruthless scope cuts.
+1. **HABAGAT** spike -> vertical slice (bold default)
+2. Void Parry only if need a fast second ship
+3. Orbit Snap if want different motion, still 2D-light
+4. Bloom / Courier only with ruthless cuts
 
-## Shared non-goals (keep for next game too)
+## Shared non-goals (v1 of any title)
 
-- Play Store APK / Capacitor out of first 2h
-- No accounts, no server leaderboard in v1
-- FB post = fun challenge link, not automation resume copy
-- ASCII-first markdown (repo hooks)
+- Play Store APK not required day one (PWA first)
+- No accounts / server leaderboard in v1
+- FB = challenge link; public posts go through egai-audience Tone SSOT
+- ASCII-first markdown
 
 ## Session note
 
-Logged on session close 2026-07-30 so a fresh low-token session can pick without
-reloading the full research chat.
-
-**Level design:** operator approved Inkfall archetype progression - carry rules in
-`LEARNINGS.md` into any next game (do not only scale time/hazard count).
-
-**Inkfall next engineering session:** Android deploy (PWA and/or Capacitor), not
-a new title, until that ships or operator reprioritizes.
+2026-07-30 close: Android + domain + music/enemies shipped for Inkfall.
+Next session opens on **HABAGAT** (`NEXT_HABAGAT.md`), not Inkfall rebuild.

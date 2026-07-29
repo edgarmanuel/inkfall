@@ -63,13 +63,23 @@ keep this pattern when building Void Parry / Orbit Snap / any short-session game
 - Install steps: README -> Chrome on Android -> Install app / Add to Home screen
 - Capacitor/Play APK only if store listing needed
 
-## Next session (this product)
+## Ship pattern (custom domain)
 
-**Operator:** install PWA on Android Chrome and smoke-test.
-**Optional later:** Capacitor wrapper for Play Store APK.
-Web live: https://inkfall.egaimanuel.tech
+- Subdomain per game: `name.egaimanuel.tech` (Inkfall done)
+- Hostinger A record -> `76.76.21.21` (or CNAME `cname.vercel-dns.com`)
+- Vercel: `npx vercel domains add <host> <project>`
+- Portfolio apex stays egaimanuel.tech; games hub optional later
 
-## Next game (separate product)
+## Inkfall product (this repo)
 
-See `GAME_OPTIONS_BANK.md` - prefer **Void Parry**, then Orbit Snap.
+**Live:** https://inkfall.egaimanuel.tech  
+PWA + arcade BGM + enemy legend shipped. Optional later: Capacitor APK.
+
+## Next game (separate product - BOLD)
+
+**Preferred:** **HABAGAT** - 3D monsoon wind-bend (Airbender-family commit loop).
+Brief: `docs/NEXT_HABAGAT.md`. Bank: `GAME_OPTIONS_BANK.md`.
+
 Apply feel laws + archetype level laws from day one.
+Void Parry / Orbit Snap remain banked thin alternates only.
+Visual bar: high-fidelity 3D ladder (not permanent grey blob).

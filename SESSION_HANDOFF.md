@@ -2,70 +2,63 @@
 
 ## State
 
-- Date: 2026-07-30 (**Android PWA shipped**)
-- Game: **Inkfall** - playable web + installable PWA
-- Live: **https://inkfall.egaimanuel.tech** (also https://inkfall-swart.vercel.app)
+- Date: 2026-07-30 (**session closed - Inkfall ship arc done**)
+- Game: **Inkfall** - playable web + PWA + custom domain
+- Live: **https://inkfall.egaimanuel.tech**
+- Fallback: https://inkfall-swart.vercel.app
 - Repo: **https://github.com/edgarmanuel/inkfall** (main)
-- Operator sign-off: **level design is great** - laws in `docs/LEARNINGS.md`
+- Operator: level design great; Android install OK; ~2% Grok remaining used
+  this stretch -> next product goes **bold**
 
 ## Shipped this arc
 
-- Core loop + A-amped paper/seal vibe
-- Draw-then-lock feel (no mid-draw chase; multi-stroke ink)
-- Level **archetypes** (gates, wind, patrol, moving seal, gauntlet every 5, ...)
-- Feel + variety tests under `scripts/`
-- Options bank for follow-on games
-- **Android PWA** - manifest + SW + icons; install from Chrome home screen
+- Core loop + paper/seal vibe + draw-then-lock + multi-stroke ink
+- Level archetypes + adversary verbs (dry/patrol/thirst/smear/burst)
+- Arcade BGM, enemy legend, feel + variety tests
+- PWA (manifest/SW/icons); Chrome install path
+- Custom domain inkfall.egaimanuel.tech
+- FB path via egai-audience Tone SSOT post file (score + paste)
 
-## Carry forward (next game)
+## Carry forward (any next game)
 
-Read **`docs/LEARNINGS.md`** before starting Void Parry / Orbit Snap:
+Read **`docs/LEARNINGS.md`** first:
 
 - Archetype roster > numeric grind
 - Teach, rotate, gauntlet cadence, readable labels
 - Draw-then-lock / multi-try budget / snappy-after-commit
-
-Banked games: **`docs/GAME_OPTIONS_BANK.md`** (Void Parry preferred next product)
+- Adversary **verbs**, not more identical dots
 
 ## Exact next action (NEW SESSION - low token)
 
-**Goal: operator smoke-test install on Android** (you do this on phone).
+**Product shift: HABAGAT (bold 3D) - not Void Parry.**
 
-1. Chrome -> https://inkfall.egaimanuel.tech
-2. Menu (three dots) -> **Install app** / **Add to Home screen**
-3. Launch icon; confirm full-screen + play feels right (draw-then-lock)
+1. Open `docs/NEXT_HABAGAT.md` + `docs/LEARNINGS.md` only
+2. Scaffold new repo/folder (suggest `C:\Projects\habagat`) - Three.js spike
+3. Implement wind-ribbon **draw -> lock on release -> ride** + breath budget
+4. Greybox city strip OK; visual targets point at high-fidelity night monsoon
+5. Do not rebuild Inkfall; do not start Void Parry unless asked
 
-**Optional later (only if asked):** Capacitor APK / Play Store wrap of `public/`.
+Full brief: **`docs/NEXT_HABAGAT.md`**  
+Options bank updated: **`docs/GAME_OPTIONS_BANK.md`**  
+Close log: **`logs/SESSION_2026-07-30-close-bold-next.md`**
 
-**Out of scope unless asked:** new game (Void Parry), FB post body.
-
-## Feel law (do not regress)
+## Feel law (Inkfall - do not regress if touching it)
 
 1. No mid-draw pull - blot pauses while finger down
 2. Wells lock on release only
 3. Multi-stroke ink budget
-4. After lock, snappy pull (not heavy mush damping)
+4. After lock, snappy pull
 
-## FB caption (when operator posts)
+## FB (Inkfall)
 
-```
-I still had 40% left of my weekly Grok limit. So I asked it to build games for me in under two hours.
-
-I got one done in under an hour.
-
-That is how easy building with AI has gotten. You describe the feel, iterate while you play, and ship a real game people can open on their phone - no big team, no long timeline.
-
-Inkfall: draw wet ink strokes. They pull a living blot like gravity. Lift your finger to lock a well. Stack strokes if you need to. Guide it into the red seal before the page dries.
-
-Works in the browser. On Android Chrome: menu (three dots) -> Install app / Add to Home screen.
-
-I scored _____. Beat me:
-https://inkfall.egaimanuel.tech
-```
+Paste-ready + tracking: egai-audience
+`content/04_posts/2026-07-30_build_inkfall-game.md`
+Live challenge: https://inkfall.egaimanuel.tech
 
 ## Close checklist
 
-- [x] Level design learnings logged (`docs/LEARNINGS.md`)
-- [x] Options bank present
-- [x] Next session = Android deploy (not new game)
+- [x] Inkfall live on custom domain
+- [x] PWA + install path
+- [x] Learnings + options bank + Habagat brief
+- [x] Session log written
 - [x] Commit + push on close
