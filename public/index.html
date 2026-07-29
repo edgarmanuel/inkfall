@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#e8dcc8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="description" content="Inkfall — draw gravity with wet ink. Guide the blot to the vermilion seal." />
+  <title>Inkfall</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect fill='%23e8dcc8' width='64' height='64'/%3E%3Ccircle cx='32' cy='34' r='16' fill='%231a1510'/%3E%3Ccircle cx='44' cy='22' r='10' fill='%23c43c2c'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --paper: #e8dcc8;
+      --paper-deep: #d4c4a8;
+      --ink: #1a1510;
+      --ink-soft: #3a3228;
+      --seal: #c43c2c;
+      --seal-hot: #e85a3a;
+      --gold: #b8943f;
+      --ui: #2a2218;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--paper);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--ui);
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    #wrap {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 50% 40%, #f2e8d6 0%, #d8c8a8 55%, #c4b090 100%);
+    }
+    canvas#game {
+      display: block;
+      width: min(100vw, 100vh * 0.62);
+      height: min(100vh, 100vw / 0.62);
+      max-width: 480px;
+      max-height: 860px;
+      border-radius: 18px;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.45) inset,
+        0 20px 50px rgba(60,40,20,0.28),
+        0 4px 12px rgba(60,40,20,0.15);
+      background: var(--paper);
+      cursor: crosshair;
+      touch-action: none;
+    }
+    @media (max-aspect-ratio: 3/4) {
+      canvas#game {
+        width: 100vw;
+        height: 100vh;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
+    #hud {
+      position: fixed;
+      left: 50%; top: 0;
+      transform: translateX(-50%);
+      width: min(100vw, 480px);
+      max-width: 480px;
+      padding: max(10px, env(safe-area-inset-top)) 16px 0;
+      pointer-events: none;
+      z-index: 5;
+      font-variant-numeric: tabular-nums;
+    }
+    @media (max-aspect-ratio: 3/4) {
+      #hud { width: 100vw; max-width: none; }
+    }
+    .row {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 10px;
+    }
+    .pill {
+      background: rgba(232, 220, 200, 0.82);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(42, 34, 24, 0.12);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+      box-shadow: 0 2px 8px rgba(60,40,20,0.08);
+    }
+    .pill b { color: var(--seal); font-weight: 800; }
+    .meter {
+      margin-top: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(42,34,24,0.12);
+      overflow: hidden;
+      border: 1px solid rgba(42,34,24,0.08);
+    }
+    .meter > i {
+      display: block; height: 100%; width: 100%;
+      background: linear-gradient(90deg, #2a2218, #5a4a38);
+      transform-origin: left center;
+      transition: transform 0.05s linear;
+    }
+    .meter.seal > i {
+      background: linear-gradient(90deg, var(--seal), var(--seal-hot));
+    }
+    .hint {
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: 0.72;
+      font-weight: 500;
+      text-align: center;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+    }
+    #overlay {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+      background: radial-gradient(ellipse at center, rgba(242,232,214,0.92), rgba(200,180,150,0.94));
+      backdrop-filter: blur(4px);
+      padding: 24px;
+    }
+    #overlay.hidden { display: none; }
+    .card {
+      width: min(360px, 100%);
+      text-align: center;
+      padding: 28px 22px 22px;
+      border-radius: 22px;
+      background: linear-gradient(165deg, #f6efe2 0%, #e4d4b8 100%);
+      border: 1px solid rgba(42,34,24,0.12);
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.55) inset,
+        0 18px 40px rgba(60,40,20,0.2);
+    }
+    .seal-mark {
+      width: 72px; height: 72px; margin: 0 auto 14px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 30%, #e86a4a, var(--seal) 55%, #8a2418 100%);
+      box-shadow:
+        0 0 0 4px rgba(196,60,44,0.25),
+        0 8px 18px rgba(140,40,30,0.35),
+        inset 0 2px 6px rgba(255,200,180,0.35);
+      display: grid; place-items: center;
+      color: #f8e8d8;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      transform: rotate(-8deg);
+    }
+    h1 {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    h1 span { color: var(--seal); }
+    .tag {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .blurb {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+      margin-bottom: 18px;
+    }
+    .stats {
+      display: flex; justify-content: center; gap: 18px;
+      margin-bottom: 18px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .stats div { opacity: 0.9; }
+    .stats b { display: block; font-size: 22px; color: var(--seal); }
+    button.cta {
+      pointer-events: auto;
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #f8efe4;
+      background: linear-gradient(180deg, #d45a42 0%, var(--seal) 55%, #9a2e22 100%);
+      box-shadow:
+        0 1px 0 rgba(255,200,180,0.35) inset,
+        0 8px 18px rgba(140,40,30,0.35);
+      cursor: pointer;
+      transition: transform 0.08s ease, filter 0.08s ease;
+    }
+    button.cta:active { transform: scale(0.98); filter: brightness(0.96); }
+    button.ghost {
+      pointer-events: auto;
+      margin-top: 10px;
+      width: 100%;
+      border: 1px solid rgba(42,34,24,0.18);
+      border-radius: 14px;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      background: rgba(255,255,255,0.35);
+      cursor: pointer;
+    }
+    .fine {
+      margin-top: 14px;
+      font-size: 11px;
+      opacity: 0.55;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game" width="420" height="720"></canvas>
+  </div>
+  <div id="hud" class="hidden" style="display:none">
+    <div class="row">
+      <div class="pill">Score <b id="scoreEl">0</b></div>
+      <div class="pill">Best <b id="bestEl">0</b></div>
+      <div class="pill">Lv <b id="lvlEl">1</b></div>
+    </div>
+    <div class="meter" title="Ink left to draw"><i id="inkBar"></i></div>
+    <div class="meter seal" title="Time" style="margin-top:5px"><i id="timeBar"></i></div>
+    <div class="hint" id="hintEl">Draw a wet stroke — gravity pulls the blot</div>
+  </div>
+  <div id="overlay">
+    <div class="card" id="card">
+      <div class="seal-mark">印</div>
+      <h1>Ink<span>fall</span></h1>
+      <div class="tag">wet ink · gravity wells · vermilion seal</div>
+      <p class="blurb" id="blurb">
+        Draw temporary gravity with your finger.
+        Guide the living blot into the red seal before it dries.
+      </p>
+      <div class="stats">
+        <div>Best score<b id="menuBest">0</b></div>
+        <div>Last run<b id="menuLast">0</b></div>
+      </div>
+      <button class="cta" id="playBtn" type="button">Press the seal</button>
+      <button class="ghost hidden" id="shareBtn" type="button" style="display:none">Copy score challenge</button>
+      <p class="fine">Tip: short curved strokes steer better than long lines.<br/>Desktop: click-drag · Esc restarts after fail</p>
+    </div>
+  </div>
+  <script>
+(function () {
+  "use strict";
+
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const overlay = document.getElementById("overlay");
+  const hud = document.getElementById("hud");
+  const playBtn = document.getElementById("playBtn");
+  const shareBtn = document.getElementById("shareBtn");
+  const blurb = document.getElementById("blurb");
+  const scoreEl = document.getElementById("scoreEl");
+  const bestEl = document.getElementById("bestEl");
+  const lvlEl = document.getElementById("lvlEl");
+  const inkBar = document.getElementById("inkBar");
+  const timeBar = document.getElementById("timeBar");
+  const hintEl = document.getElementById("hintEl");
+  const menuBest = document.getElementById("menuBest");
+  const menuLast = document.getElementById("menuLast");
+
+  const W = canvas.width;
+  const H = canvas.height;
+  const STORAGE_KEY = "inkfall_best_v1";
+
+  let best = 0;
+  try { best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10) || 0; } catch (_) {}
+  menuBest.textContent = String(best);
+  bestEl.textContent = String(best);
+
+  // ---------- Audio (tiny synth, no files) ----------
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+  function beep(freq, dur, type, gain, slide) {
+    if (!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type || "sine";
+    o.frequency.setValueAtTime(freq, t0);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, slide), t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain || 0.08, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+  function noiseBurst(dur, gain) {
+    if (!audioCtx) return;
+    const n = Math.floor(audioCtx.sampleRate * dur);
+    const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = audioCtx.createBufferSource();
+    const g = audioCtx.createGain();
+    const f = audioCtx.createBiquadFilter();
+    f.type = "bandpass"; f.frequency.value = 800; f.Q.value = 0.6;
+    src.buffer = buf;
+    g.gain.value = gain || 0.12;
+    src.connect(f); f.connect(g); g.connect(audioCtx.destination);
+    src.start();
+  }
+
+  // ---------- Paper texture (baked once) ----------
+  const paperCanvas = document.createElement("canvas");
+  paperCanvas.width = W;
+  paperCanvas.height = H;
+  const pctx = paperCanvas.getContext("2d");
+  function bakePaper() {
+    const g = pctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, "#f3e9d6");
+    g.addColorStop(0.45, "#e8dcc8");
+    g.addColorStop(1, "#d8c6a6");
+    pctx.fillStyle = g;
+    pctx.fillRect(0, 0, W, H);
+
+    // fiber noise
+    const img = pctx.getImageData(0, 0, W, H);
+    const data = img.data;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4;
+        const n = (Math.sin(x * 0.37 + y * 0.11) * 4) + (Math.random() * 14 - 7);
+        const fiber = ((x * 17 + y * 3) % 23 === 0) ? -10 : 0;
+        data[i] = clamp(data[i] + n + fiber, 0, 255);
+        data[i + 1] = clamp(data[i + 1] + n * 0.9 + fiber, 0, 255);
+        data[i + 2] = clamp(data[i + 2] + n * 0.7 + fiber * 0.5, 0, 255);
+      }
+    }
+    pctx.putImageData(img, 0, 0);
+
+    // soft vignette
+    const v = pctx.createRadialGradient(W * 0.5, H * 0.42, H * 0.15, W * 0.5, H * 0.5, H * 0.72);
+    v.addColorStop(0, "rgba(255,255,255,0)");
+    v.addColorStop(1, "rgba(120,90,50,0.16)");
+    pctx.fillStyle = v;
+    pctx.fillRect(0, 0, W, H);
+
+    // faint deckle edges
+    pctx.strokeStyle = "rgba(90,70,40,0.08)";
+    pctx.lineWidth = 10;
+    pctx.strokeRect(8, 8, W - 16, H - 16);
+  }
+  bakePaper();
+
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function dist(ax, ay, bx, by) { const dx = bx - ax, dy = by - ay; return Math.hypot(dx, dy); }
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  // ---------- State ----------
+  const STATE = { MENU: 0, PLAY: 1, WIN: 2, LOSE: 3 };
+  let state = STATE.MENU;
+  let score = 0;
+  let level = 1;
+  let lastRun = 0;
+  let timeLeft = 1;
+  let timeMax = 12;
+  let inkLeft = 1;
+  let inkMax = 1;
+  let shake = 0;
+  let flash = 0;
+  let sealPulse = 0;
+  let stampT = 0;
+  let paperWarp = 0;
+  let hintTimer = 0;
+  let combo = 0;
+  let particles = [];
+  let floatTexts = [];
+  let wells = [];
+  let drawing = null;
+  let blob = null;
+  let goal = null;
+  let hazards = [];
+  let tPrev = 0;
+  let winHold = 0;
+  let loseHold = 0;
+  let successFlash = 0;
+  let firstStrokeDone = false;
+
+  function resetRunStats() {
+    score = 0;
+    level = 1;
+    combo = 0;
+  }
+
+  function inkBudgetForLevel(lv) {
+    return clamp(180 + lv * 8, 180, 320);
+  }
+  function timeForLevel(lv) {
+    return clamp(13 - lv * 0.35, 7.5, 13);
+  }
+
+  function spawnLevel() {
+    particles = [];
+    floatTexts = [];
+    wells = [];
+    drawing = null;
+    hazards = [];
+    stampT = 0;
+    paperWarp = 0;
+    successFlash = 0;
+    firstStrokeDone = false;
+    hintTimer = 4.5;
+    inkMax = inkBudgetForLevel(level);
+    inkLeft = inkMax;
+    timeMax = timeForLevel(level);
+    timeLeft = timeMax;
+
+    const margin = 56;
+    // blob starts lower-left-ish, goal upper-right-ish, with variation
+    const side = Math.random() < 0.5;
+    blob = {
+      x: side ? rand(margin + 20, W * 0.42) : rand(W * 0.58, W - margin - 20),
+      y: rand(H * 0.55, H - margin - 40),
+      vx: 0,
+      vy: 0,
+      r: 16,
+      wobble: Math.random() * Math.PI * 2,
+      wet: 1,
+      trail: []
+    };
+    goal = {
+      x: side ? rand(W * 0.55, W - margin - 10) : rand(margin + 10, W * 0.45),
+      y: rand(margin + 30, H * 0.38),
+      r: 28,
+      rot: rand(-0.35, 0.35),
+      open: true
+    };
+
+    // keep them apart
+    let guard = 0;
+    while (dist(blob.x, blob.y, goal.x, goal.y) < 200 && guard++ < 20) {
+      goal.x = rand(margin + 10, W - margin - 10);
+      goal.y = rand(margin + 30, H * 0.4);
+    }
+
+    // drying blot hazards (absorb ink / bounce soft) from level 3
+    const hzCount = level >= 3 ? Math.min(1 + Math.floor((level - 3) / 2), 4) : 0;
+    for (let i = 0; i < hzCount; i++) {
+      let hx, hy, tries = 0;
+      do {
+        hx = rand(margin, W - margin);
+        hy = rand(H * 0.28, H * 0.72);
+        tries++;
+      } while (
+        tries < 30 &&
+        (dist(hx, hy, blob.x, blob.y) < 90 ||
+          dist(hx, hy, goal.x, goal.y) < 90)
+      );
+      hazards.push({
+        x: hx, y: hy,
+        r: rand(14, 22),
+        phase: Math.random() * Math.PI * 2,
+        spin: rand(-0.6, 0.6)
+      });
+    }
+
+    updateHud();
+  }
+
+  function updateHud() {
+    scoreEl.textContent = String(score);
+    bestEl.textContent = String(best);
+    lvlEl.textContent = String(level);
+    inkBar.style.transform = "scaleX(" + clamp(inkLeft / inkMax, 0, 1).toFixed(4) + ")";
+    timeBar.style.transform = "scaleX(" + clamp(timeLeft / timeMax, 0, 1).toFixed(4) + ")";
+    if (hintTimer > 0 && !firstStrokeDone) {
+      hintEl.textContent = "Draw a wet stroke — gravity pulls the blot";
+    } else if (level >= 3 && hazards.length) {
+      hintEl.textContent = "Avoid dry blots — they drink your ink";
+    } else {
+      hintEl.textContent = "Short curves steer · lift finger to lock the well";
+    }
+  }
+
+  function startGame() {
+    ensureAudio();
+    beep(220, 0.08, "sine", 0.06);
+    setTimeout(() => beep(330, 0.1, "sine", 0.07), 60);
+    overlay.classList.add("hidden");
+    hud.style.display = "block";
+    resetRunStats();
+    spawnLevel();
+    state = STATE.PLAY;
+    tPrev = performance.now();
+    requestAnimationFrame(frame);
+  }
+
+  function endLose(reason) {
+    if (state !== STATE.PLAY) return;
+    state = STATE.LOSE;
+    loseHold = 0;
+    lastRun = score;
+    menuLast.textContent = String(lastRun);
+    noiseBurst(0.18, 0.1);
+    beep(140, 0.25, "triangle", 0.08, 60);
+    shake = 10;
+    if (blob) spawnBurst(blob.x, blob.y, "#1a1510", 28, 2.2);
+    // reason shown after short juice beat in frame loop
+    endLose.reason = reason || "The blot was lost.";
+  }
+
+  function endWin() {
+    if (state !== STATE.PLAY) return;
+    state = STATE.WIN;
+    winHold = 0;
+    stampT = 1;
+    paperWarp = 1;
+    successFlash = 1;
+    sealPulse = 1;
+    shake = 8;
+
+    const timeBonus = Math.floor(timeLeft * 12);
+    const inkBonus = Math.floor((inkLeft / inkMax) * 40);
+    const levelBonus = 50 + level * 15;
+    const gained = levelBonus + timeBonus + inkBonus + combo * 5;
+    score += gained;
+    combo += 1;
+    if (score > best) {
+      best = score;
+      try { localStorage.setItem(STORAGE_KEY, String(best)); } catch (_) {}
+    }
+    updateHud();
+    menuBest.textContent = String(best);
+
+    spawnBurst(goal.x, goal.y, "#c43c2c", 40, 3.2);
+    spawnBurst(goal.x, goal.y, "#1a1510", 18, 2.0);
+    floatTexts.push({
+      x: goal.x, y: goal.y - 30,
+      text: "+" + gained, life: 1.1, vy: -40, color: "#c43c2c"
+    });
+
+    // victory chord
+    beep(392, 0.12, "sine", 0.07);
+    setTimeout(() => beep(523, 0.14, "sine", 0.08), 70);
+    setTimeout(() => beep(659, 0.22, "sine", 0.09), 140);
+    noiseBurst(0.12, 0.08);
+  }
+
+  function showResult(won, reason) {
+    overlay.classList.remove("hidden");
+    hud.style.display = "none";
+    const title = document.querySelector("#card h1");
+    if (won) {
+      // intermediate wins stay in play — only final menu uses this for lose/menu
+    }
+    blurb.innerHTML = reason
+      ? reason + "<br/><br/>Score <b style='color:#c43c2c'>" + score + "</b> · Best <b>" + best + "</b>"
+      : "Draw temporary gravity with your finger. Guide the living blot into the red seal before it dries.";
+    playBtn.textContent = score > 0 ? "Again — press the seal" : "Press the seal";
+    shareBtn.style.display = score > 0 ? "block" : "none";
+    menuLast.textContent = String(lastRun);
+    menuBest.textContent = String(best);
+  }
+
+  function showLoseMenu(reason) {
+    lastRun = score;
+    menuLast.textContent = String(lastRun);
+    blurb.innerHTML =
+      "<b style='color:#2a2218'>" + reason + "</b><br/><br/>" +
+      "You reached level <b>" + level + "</b><br/>" +
+      "Score <b style='color:#c43c2c'>" + score + "</b> · Best <b>" + best + "</b><br/><br/>" +
+      "Beat me? Reply with your score.";
+    playBtn.textContent = "One more blot";
+    shareBtn.style.display = "block";
+    overlay.classList.remove("hidden");
+    hud.style.display = "none";
+    state = STATE.MENU;
+  }
+
+  // ---------- Particles / juice ----------
+  function spawnBurst(x, y, color, n, speed) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = rand(0.4, 1) * speed * 60;
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s,
+        r: rand(2, 6),
+        life: rand(0.45, 0.95),
+        max: 1,
+        color,
+        g: rand(80, 220)
+      });
+    }
+  }
+
+  function spawnDrip(x, y) {
+    particles.push({
+      x: x + rand(-3, 3), y: y + rand(-3, 3),
+      vx: rand(-12, 12), vy: rand(20, 60),
+      r: rand(1.5, 3.5),
+      life: rand(0.3, 0.6),
+      max: 1,
+      color: "#1a1510",
+      g: 280
+    });
+  }
+
+  // ---------- Input ----------
+  function canvasPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const src = e.touches && e.touches[0] ? e.touches[0] : e;
+    const x = ((src.clientX - rect.left) / rect.width) * W;
+    const y = ((src.clientY - rect.top) / rect.height) * H;
+    return { x, y };
+  }
+
+  function onDown(e) {
+    if (state !== STATE.PLAY) return;
+    e.preventDefault();
+    ensureAudio();
+    if (inkLeft <= 4) return;
+    const p = canvasPos(e);
+    drawing = { pts: [{ x: p.x, y: p.y, t: performance.now() }], width: 10 };
+    firstStrokeDone = true;
+    beep(180 + Math.random() * 40, 0.04, "sine", 0.03);
+  }
+
+  function onMove(e) {
+    if (state !== STATE.PLAY || !drawing) return;
+    e.preventDefault();
+    const p = canvasPos(e);
+    const last = drawing.pts[drawing.pts.length - 1];
+    const d = dist(last.x, last.y, p.x, p.y);
+    if (d < 3) return;
+    const cost = d * 0.55;
+    if (inkLeft <= 0) {
+      finalizeStroke();
+      return;
+    }
+    inkLeft = Math.max(0, inkLeft - cost);
+    drawing.pts.push({ x: p.x, y: p.y, t: performance.now() });
+    if (Math.random() < 0.15) spawnDrip(p.x, p.y);
+    updateHud();
+  }
+
+  function onUp(e) {
+    if (state !== STATE.PLAY) return;
+    if (e) e.preventDefault();
+    finalizeStroke();
+  }
+
+  function finalizeStroke() {
+    if (!drawing || drawing.pts.length < 2) {
+      drawing = null;
+      return;
+    }
+    // Build well segments with lifetime
+    const life = clamp(2.8 + drawing.pts.length * 0.015, 2.8, 5.5);
+    const strength = 1400 + level * 40;
+    wells.push({
+      pts: drawing.pts.map((p) => ({ x: p.x, y: p.y })),
+      life,
+      maxLife: life,
+      strength,
+      width: 11
+    });
+    drawing = null;
+    beep(240, 0.06, "triangle", 0.04);
+    if (inkLeft < inkMax * 0.2) {
+      floatTexts.push({
+        x: blob.x, y: blob.y - 24,
+        text: "ink low", life: 0.9, vy: -20, color: "#5a4030"
+      });
+    }
+  }
+
+  canvas.addEventListener("mousedown", onDown);
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
+  canvas.addEventListener("touchstart", onDown, { passive: false });
+  canvas.addEventListener("touchmove", onMove, { passive: false });
+  canvas.addEventListener("touchend", onUp, { passive: false });
+  canvas.addEventListener("touchcancel", onUp, { passive: false });
+
+  playBtn.addEventListener("click", () => {
+    ensureAudio();
+    startGame();
+  });
+
+  shareBtn.addEventListener("click", async () => {
+    const text =
+      "I scored " + (lastRun || score) + " in Inkfall — draw gravity with wet ink and hit the vermilion seal.\n" +
+      "Beat me: " + (typeof location !== "undefined" ? location.href : "Inkfall");
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        shareBtn.textContent = "Copied — paste on FB";
+        setTimeout(() => { shareBtn.textContent = "Copy score challenge"; }, 2000);
+      } else {
+        prompt("Copy your challenge:", text);
+      }
+    } catch (_) {
+      prompt("Copy your challenge:", text);
+    }
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state === STATE.PLAY) {
+      endLose("You set the brush down.");
+    }
+    if ((e.key === " " || e.key === "Enter") && state === STATE.MENU) {
+      e.preventDefault();
+      startGame();
+    }
+  });
+
+  // ---------- Physics ----------
+  function nearestOnPolyline(pts, x, y) {
+    let bestD = Infinity;
+    let bx = pts[0].x, by = pts[0].y;
+    let tx = 0, ty = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const ax = pts[i].x, ay = pts[i].y;
+      const cx = pts[i + 1].x, cy = pts[i + 1].y;
+      const abx = cx - ax, aby = cy - ay;
+      const len2 = abx * abx + aby * aby || 1;
+      let t = ((x - ax) * abx + (y - ay) * aby) / len2;
+      t = clamp(t, 0, 1);
+      const px = ax + abx * t;
+      const py = ay + aby * t;
+      const d = dist(x, y, px, py);
+      if (d < bestD) {
+        bestD = d;
+        bx = px; by = py;
+        // tangent for slight flow along stroke
+        const inv = 1 / Math.hypot(abx, aby) || 1;
+        tx = abx * inv;
+        ty = aby * inv;
+      }
+    }
+    return { d: bestD, x: bx, y: by, tx, ty };
+  }
+
+  function stepPhysics(dt) {
+    // wells age
+    for (let i = wells.length - 1; i >= 0; i--) {
+      wells[i].life -= dt;
+      if (wells[i].life <= 0) wells.splice(i, 1);
+    }
+
+    // gravity from wells
+    let ax = 0, ay = 0;
+    for (const w of wells) {
+      const n = nearestOnPolyline(w.pts, blob.x, blob.y);
+      const influence = 90;
+      if (n.d < influence) {
+        const fall = 1 - n.d / influence;
+        const lifeK = w.life / w.maxLife;
+        const pull = w.strength * fall * fall * lifeK;
+        const dx = n.x - blob.x;
+        const dy = n.y - blob.y;
+        const inv = 1 / (n.d + 8);
+        ax += dx * inv * pull;
+        ay += dy * inv * pull;
+        // slight along-stroke current
+        ax += n.tx * pull * 0.08;
+        ay += n.ty * pull * 0.08;
+      }
+    }
+
+    // soft world gravity downward (paper world)
+    ay += 28;
+
+    // hazards: dry blots repel slightly and steal ink on touch
+    for (const h of hazards) {
+      h.phase += dt * h.spin;
+      const d = dist(blob.x, blob.y, h.x, h.y);
+      const minD = blob.r + h.r;
+      if (d < minD + 40) {
+        const fall = 1 - d / (minD + 40);
+        const dx = blob.x - h.x;
+        const dy = blob.y - h.y;
+        const inv = 1 / (d + 1);
+        ax += dx * inv * 500 * fall;
+        ay += dy * inv * 500 * fall;
+      }
+      if (d < minD * 0.92) {
+        inkLeft = Math.max(0, inkLeft - 35 * dt);
+        blob.vx *= 0.92;
+        blob.vy *= 0.92;
+        if (Math.random() < 0.2) spawnDrip(blob.x, blob.y);
+      }
+    }
+
+    blob.vx += ax * dt;
+    blob.vy += ay * dt;
+    // damping — wet ink viscosity
+    const damp = Math.pow(0.86, dt * 60);
+    blob.vx *= damp;
+    blob.vy *= damp;
+    // speed cap
+    const sp = Math.hypot(blob.vx, blob.vy);
+    const maxSp = 420;
+    if (sp > maxSp) {
+      blob.vx *= maxSp / sp;
+      blob.vy *= maxSp / sp;
+    }
+
+    blob.x += blob.vx * dt;
+    blob.y += blob.vy * dt;
+    blob.wobble += dt * 6;
+    blob.wet = clamp(blob.wet - dt * 0.02, 0.7, 1);
+
+    // trail
+    blob.trail.push({ x: blob.x, y: blob.y, life: 0.45 });
+    if (blob.trail.length > 18) blob.trail.shift();
+    for (const t of blob.trail) t.life -= dt;
+
+    // soft walls
+    const m = blob.r + 4;
+    if (blob.x < m) { blob.x = m; blob.vx = Math.abs(blob.vx) * 0.4; }
+    if (blob.x > W - m) { blob.x = W - m; blob.vx = -Math.abs(blob.vx) * 0.4; }
+    if (blob.y < m) { blob.y = m; blob.vy = Math.abs(blob.vy) * 0.4; }
+    if (blob.y > H - m) { blob.y = H - m; blob.vy = -Math.abs(blob.vy) * 0.35; }
+
+    // goal capture
+    const gd = dist(blob.x, blob.y, goal.x, goal.y);
+    if (gd < goal.r - 4) {
+      endWin();
+    }
+
+    // fail conditions
+    timeLeft -= dt;
+    if (timeLeft <= 0) {
+      endLose("The ink dried.");
+      return;
+    }
+  }
+
+  // ---------- Draw ----------
+  function drawWell(pts, width, alpha, drying) {
+    if (pts.length < 2) return;
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    // wet sheen under
+    ctx.strokeStyle = "rgba(40, 30, 20, " + (0.12 * alpha) + ")";
+    ctx.lineWidth = width + 6;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+
+    // main ink
+    const gradAlpha = alpha * (0.55 + 0.45 * drying);
+    ctx.strokeStyle = "rgba(22, 18, 14, " + gradAlpha + ")";
+    ctx.lineWidth = width * (0.7 + 0.3 * drying);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+
+    // glossy center
+    ctx.strokeStyle = "rgba(70, 60, 50, " + (0.2 * alpha * drying) + ")";
+    ctx.lineWidth = Math.max(2, width * 0.25);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBlob() {
+    // trail ghost
+    for (const t of blob.trail) {
+      if (t.life <= 0) continue;
+      const a = clamp(t.life / 0.45, 0, 1) * 0.2;
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(20,16,12," + a + ")";
+      ctx.arc(t.x, t.y, blob.r * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const wob = Math.sin(blob.wobble) * 2.2;
+    const wob2 = Math.cos(blob.wobble * 1.3) * 1.6;
+    const rx = blob.r + wob;
+    const ry = blob.r - wob * 0.5 + wob2 * 0.3;
+
+    // contact shadow
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(60,40,20,0.14)";
+    ctx.ellipse(blob.x + 2, blob.y + ry * 0.85, rx * 0.9, ry * 0.28, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // body
+    const g = ctx.createRadialGradient(
+      blob.x - rx * 0.35, blob.y - ry * 0.4, 2,
+      blob.x, blob.y, rx * 1.15
+    );
+    g.addColorStop(0, "#3a322c");
+    g.addColorStop(0.35, "#1c1713");
+    g.addColorStop(1, "#0c0a08");
+    ctx.beginPath();
+    ctx.fillStyle = g;
+    ctx.ellipse(blob.x, blob.y, rx, ry, wob * 0.03, 0, Math.PI * 2);
+    ctx.fill();
+
+    // wet rim
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 2;
+    ctx.ellipse(blob.x, blob.y, rx, ry, wob * 0.03, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // specular
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(255,245,230,0.22)";
+    ctx.ellipse(blob.x - rx * 0.28, blob.y - ry * 0.32, rx * 0.28, ry * 0.18, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // tiny secondary drip bead
+    ctx.beginPath();
+    ctx.fillStyle = "#15110e";
+    ctx.arc(blob.x + rx * 0.55, blob.y + ry * 0.35, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawSeal(gx, gy, r, rot, pulse, stamp) {
+    ctx.save();
+    ctx.translate(gx, gy);
+    ctx.rotate(rot + Math.sin(performance.now() / 700) * 0.03);
+
+    const s = r * (1 + pulse * 0.12 + (stamp > 0 ? (1 - stamp) * 0.35 : 0));
+    const alpha = stamp > 0.2 ? 1 : 1;
+
+    // paper crush shadow
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(120,40,30," + (0.12 + pulse * 0.1) + ")";
+    ctx.arc(3, 4, s * 1.05, 0, Math.PI * 2);
+    ctx.fill();
+
+    // outer ring
+    const rg = ctx.createRadialGradient(-s * 0.3, -s * 0.3, 2, 0, 0, s);
+    rg.addColorStop(0, "#e86a4a");
+    rg.addColorStop(0.45, "#c43c2c");
+    rg.addColorStop(1, "#7a2218");
+    ctx.beginPath();
+    ctx.fillStyle = rg;
+    ctx.arc(0, 0, s, 0, Math.PI * 2);
+    ctx.fill();
+
+    // carved ring
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(255,220,200,0.35)";
+    ctx.lineWidth = 3;
+    ctx.arc(0, 0, s * 0.78, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(80,20,15,0.45)";
+    ctx.lineWidth = 2;
+    ctx.arc(0, 0, s * 0.62, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // character-like mark (stylized, not relying on fonts alone)
+    ctx.fillStyle = "rgba(255,236,220," + (0.88 * alpha) + ")";
+    ctx.font = "bold " + Math.floor(s * 0.7) + "px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("印", 0, 1);
+
+    // gold fleck
+    if (pulse > 0.1 || stamp > 0) {
+      ctx.strokeStyle = "rgba(212,175,80," + (0.35 + pulse * 0.4) + ")";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 1.12, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // stamp shockwave
+    if (stamp > 0) {
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(196,60,44," + (stamp * 0.7) + ")";
+      ctx.lineWidth = 4 * stamp;
+      ctx.arc(0, 0, s * (1.3 + (1 - stamp) * 2.2), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function drawHazard(h) {
+    const wob = Math.sin(h.phase * 3) * 1.5;
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(55,48,40,0.55)";
+    ctx.ellipse(h.x, h.y, h.r + wob, h.r * 0.85 - wob * 0.3, h.phase, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(30,24,18,0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.ellipse(h.x, h.y, h.r + wob, h.r * 0.85, h.phase, 0, Math.PI * 2);
+    ctx.stroke();
+    // cracked dry center
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(90,80,70,0.35)";
+    ctx.arc(h.x - 2, h.y - 2, h.r * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= dt;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      p.vy += (p.g || 120) * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.98;
+      const a = clamp(p.life / 0.7, 0, 1);
+      ctx.beginPath();
+      ctx.fillStyle = p.color.length === 7
+        ? hexAlpha(p.color, a)
+        : p.color;
+      ctx.arc(p.x, p.y, p.r * a, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function hexAlpha(hex, a) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+  }
+
+  function drawFloatTexts(dt) {
+    for (let i = floatTexts.length - 1; i >= 0; i--) {
+      const f = floatTexts[i];
+      f.life -= dt;
+      if (f.life <= 0) { floatTexts.splice(i, 1); continue; }
+      f.y += f.vy * dt;
+      ctx.save();
+      ctx.globalAlpha = clamp(f.life, 0, 1);
+      ctx.fillStyle = f.color;
+      ctx.font = "bold 18px system-ui,sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.restore();
+    }
+  }
+
+  function drawScene(dt) {
+    // paper with optional warp (success)
+    ctx.save();
+    if (paperWarp > 0) {
+      const k = Math.sin(paperWarp * Math.PI) * 0.012;
+      ctx.translate(W / 2, H / 2);
+      ctx.scale(1 + k, 1 - k * 0.6);
+      ctx.translate(-W / 2, -H / 2);
+    }
+    if (shake > 0) {
+      ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    }
+    ctx.drawImage(paperCanvas, 0, 0);
+
+    // subtle guide: ghost path suggestion on first levels
+    if (level <= 2 && !firstStrokeDone && state === STATE.PLAY) {
+      ctx.save();
+      ctx.setLineDash([6, 10]);
+      ctx.strokeStyle = "rgba(196,60,44,0.18)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(blob.x, blob.y);
+      const mx = lerp(blob.x, goal.x, 0.5) + (goal.y - blob.y) * 0.15;
+      const my = lerp(blob.y, goal.y, 0.5) - (goal.x - blob.x) * 0.1;
+      ctx.quadraticCurveTo(mx, my, goal.x, goal.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    for (const h of hazards) drawHazard(h);
+
+    for (const w of wells) {
+      const drying = clamp(w.life / w.maxLife, 0, 1);
+      drawWell(w.pts, w.width, 0.55 + 0.45 * drying, drying);
+    }
+    if (drawing && drawing.pts.length) {
+      drawWell(drawing.pts, drawing.width, 0.95, 1);
+    }
+
+    if (goal) drawSeal(goal.x, goal.y, goal.r, goal.rot, sealPulse, stampT);
+
+    if (blob) drawBlob();
+
+    drawParticles(dt);
+    drawFloatTexts(dt);
+
+    // success vermilion flash (amped A moment)
+    if (successFlash > 0) {
+      ctx.fillStyle = "rgba(196,60,44," + (successFlash * 0.22) + ")";
+      ctx.fillRect(0, 0, W, H);
+      // electric rim only on success — hybrid spark
+      ctx.strokeStyle = "rgba(120, 220, 255," + (successFlash * 0.35) + ")";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(10, 10, W - 20, H - 20);
+    }
+
+    // vignette edge while playing
+    if (state === STATE.PLAY && timeLeft < 3) {
+      const panic = 1 - timeLeft / 3;
+      ctx.fillStyle = "rgba(120,40,30," + (panic * 0.12) + ")";
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    ctx.restore();
+
+    // full white flash
+    if (flash > 0) {
+      ctx.fillStyle = "rgba(255,250,240," + (flash * 0.55) + ")";
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // ---------- Main loop ----------
+  function frame(now) {
+    const dt = clamp((now - tPrev) / 1000, 0, 0.033);
+    tPrev = now;
+
+    if (shake > 0) shake = Math.max(0, shake - dt * 28);
+    if (flash > 0) flash = Math.max(0, flash - dt * 3);
+    if (sealPulse > 0) sealPulse = Math.max(0, sealPulse - dt * 1.4);
+    if (stampT > 0) stampT = Math.max(0, stampT - dt * 1.6);
+    if (paperWarp > 0) paperWarp = Math.max(0, paperWarp - dt * 1.8);
+    if (successFlash > 0) successFlash = Math.max(0, successFlash - dt * 1.5);
+    if (hintTimer > 0) hintTimer -= dt;
+
+    if (state === STATE.PLAY) {
+      stepPhysics(dt);
+      updateHud();
+    } else if (state === STATE.WIN) {
+      // animate stamp then next level
+      winHold += dt;
+      if (blob) {
+        blob.x = lerp(blob.x, goal.x, 0.2);
+        blob.y = lerp(blob.y, goal.y, 0.2);
+        blob.r = lerp(blob.r, 6, 0.15);
+      }
+      if (winHold > 0.85) {
+        level += 1;
+        spawnLevel();
+        state = STATE.PLAY;
+        flash = 0.35;
+        beep(300, 0.05, "sine", 0.04);
+      }
+    } else if (state === STATE.LOSE) {
+      loseHold += dt;
+      if (loseHold > 0.9) {
+        showLoseMenu(endLose.reason || "The blot was lost.");
+      }
+    }
+
+    drawScene(dt);
+
+    if (state !== STATE.MENU) {
+      requestAnimationFrame(frame);
+    } else {
+      // idle menu paper
+      drawScene(0);
+    }
+  }
+
+  // idle draw on menu
+  function idleMenu() {
+    drawScene(0);
+  }
+  idleMenu();
+
+  // prevent pull-to-refresh / scroll while playing on mobile
+  document.body.addEventListener("touchmove", (e) => {
+    if (state === STATE.PLAY) e.preventDefault();
+  }, { passive: false });
+
+})();
+  </script>
+</body>
+</html>
