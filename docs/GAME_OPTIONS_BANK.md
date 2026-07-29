@@ -86,3 +86,9 @@ best score, Vercel static deploy, optional `scripts/*-test.mjs` for feel gates.
 
 Logged on session close 2026-07-30 so a fresh low-token session can pick without
 reloading the full research chat.
+
+**Level design:** operator approved Inkfall archetype progression - carry rules in
+`LEARNINGS.md` into any next game (do not only scale time/hazard count).
+
+**Inkfall next engineering session:** Android deploy (PWA and/or Capacitor), not
+a new title, until that ships or operator reprioritizes.
