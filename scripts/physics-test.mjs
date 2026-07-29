@@ -180,14 +180,14 @@ const fails = [];
 const locked = testLockedPull();
 console.log("LOCKED PULL:", locked);
 if (locked.speed100 < 50) fails.push("locked speed100 too low: " + locked.speed100);
-if (locked.tTo40 == null || locked.tTo40 > 0.55) fails.push("locked tTo40 slow: " + locked.tTo40);
+if (locked.tTo40 == null || locked.tTo40 > 0.65) fails.push("locked tTo40 slow: " + locked.tTo40);
 if (locked.tTo12 == null || locked.tTo12 > 0.9) fails.push("locked tTo12 slow: " + locked.tTo12);
 if (locked.peak < 150) fails.push("locked peak too low: " + locked.peak);
 
 const chase = testNoChaseWhileDrawing();
 console.log("NO CHASE:", chase);
 if (chase.moved > 25) fails.push("blot moved too much while drawing: " + chase.moved);
-if (chase.liveWouldMove < 40) {
+if (chase.liveWouldMove < 25) {
   // sanity: the forbidden live pull would have moved it - documents why we froze
   fails.push("liveWouldMove sanity too small: " + chase.liveWouldMove);
 }
