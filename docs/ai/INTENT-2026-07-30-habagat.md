@@ -12,11 +12,11 @@
 ## Goal (operator words)
 
 When Habagat works, someone opens it on a phone and in about 30 seconds feels
-**wow - night monsoon city** - then **rides wind they drew**. This product is
-mainly a **portfolio / fidelity showpiece**. Session-1 ambition is a
-**Snowflow-class fidelity chase** (visual density and elemental juice), not a
-thin greybox-only spike. If fidelity stalls after hard work: **cut content,
-keep look** - one beautiful strip beats a full level roster.
+**wow - PH Habagat baha (flood night)** - then **cuts a wind path through the
+flood and rides it**. Art bar = real monsoon flood stills (wet reflective
+water, sodium/LED lights, emergency orange accents), not dry neon corridor.
+Portfolio / fidelity showpiece; Snowflow-class density. Stall: cut content,
+keep the flood look - one beautiful strip.
 
 ---
 
@@ -25,10 +25,10 @@ keep look** - one beautiful strip beats a full level roster.
 | Domain | Lock |
 |---|---|
 | Job / outcome | Wow + draw-lock-ride wind through wet night city |
-| Users / who | Phone browsers; portfolio viewers first; PH FB score-challenge optional later |
+| Users / who | **Hardcore** WebGPU players + portfolio viewers; Inkfall owns broad/casual share. PH FB optional later; clip (D) for can't-launch |
 | Surfaces | Web 3D game; later habagat.egaimanuel.tech + optional PWA |
-| Constraints | Mobile-first; original IP only (air-bend *mechanic family*, not Avatar lore); pure skill score if scoring ships; no P2E |
-| Risk | Fidelity chase can stall playable loop; WebGPU-only may exclude mid Android |
+| Constraints | Mobile-first **Android 12+ Chrome** only (confirmed 2026-07-30; operator: no point converting Android 12- into AI audience); original IP only (air-bend *mechanic family*, not Avatar lore); pure skill score if scoring ships; no P2E |
+| Risk | Fidelity chase can stall playable loop; even on Android 12+, WebGPU still needs supported GPU (Qualcomm/ARM path) - not 100% of devices |
 | Demo / claims | Portfolio still / short clip + playable strip; public score post optional later |
 | Learning goals | High-fidelity web 3D; wet city + rain + neon; 3D gesture-commit feel |
 | Non-goals | Avatar IP/characters; multi-spell Snowflow clone; full 15-archetype roster before look; Void Parry unless operator flips; Capacitor unless needed |
@@ -45,7 +45,9 @@ keep look** - one beautiful strip beats a full level roster.
 | Session-1 ambition | Snowflow-class fidelity chase |
 | Hero | Human runner / courier |
 | Camera | Chase 3rd-person, slightly elevated |
-| First non-negotiable wow | Wet night city materials + rain + neon |
+| First non-negotiable wow | **Baha flood** - murky reflective water, heavy rain, practical/emergency lights; wind path through flood |
+| Time of day | **Any** (day/overcast/night) - night not required (operator 2026-07-30) |
+| Fantasy | Habagat bender: draw wind -> lock parts baha -> ride to high ground |
 | Stall fallback | Cut content, keep look - one beautiful strip |
 | Core loop (from brief) | Draw wind ribbon -> release locks -> snappy ride; multi-try breath; no mid-draw chase |
 | Level content early | Minimal; strip / corridor over full archetype bank |
@@ -70,10 +72,14 @@ keep look** - one beautiful strip beats a full level roster.
 | A2 | Human courier + chase camera | confirmed |
 | A3 | City / rain / neon before multi-verb spells | confirmed |
 | A4 | Fallback = one beautiful strip | confirmed |
-| A5 | Three.js (+ post stack) is first engine candidate | unconfirmed - research |
-| A6 | WebGPU-only is acceptable if mid-range Android fails | unconfirmed - open risk |
+| A5 | Engine pin = **C WebGPU-first** (Babylon.js WebGPU + custom scene; Snowflow-class fidelity chase) | **pinned** 2026-07-30 operator "C + D. go" |
+| A6 | WebGPU required for live play; can't-launch gets video (A11) - no WebGL2 fidelity ceiling | **pinned** with C |
 | A7 | FB score-challenge is not a v0 gate | unconfirmed - treat as later unless operator upgrades |
 | A8 | Working title HABAGAT sticks | unconfirmed - naming free |
+| A9 | Target floor = **Android 12+ Chrome** (not older Android) | **confirmed** 2026-07-30 |
+| A10 | Rationale: **no point converting Android 12- users into AI audience** - product and share path assume modern phone Chrome; do not spend fidelity or support budget on pre-12 | **confirmed** 2026-07-30 (operator words) |
+| A11 | **Can't launch -> recorded video** (portfolio/share path). Live play for capable devices; do not water down fidelity for universal launch. | **confirmed** 2026-07-30 (operator words) |
+| A12 | Stack pin **C + D** | **pinned** 2026-07-30 |
 
 ---
 
@@ -109,15 +115,16 @@ keep look** - one beautiful strip beats a full level roster.
 
 ## First next action (after this file)
 
-1. Research brief is written: `docs/ai/RESEARCH-BRIEF-2026-07-30-habagat.md`
-2. **Stop** - no scaffold / no code until operator starts research or spike session
-3. Later: full options matrix from research brief -> scaffold `C:\Projects\habagat` -> Plan A spike
+1. Research matrix filled: `docs/ai/RESEARCH-BRIEF-2026-07-30-habagat.md`
+2. **Stop for pin accept** - no scaffold until operator accepts Approach A (or revises)
+3. Then: scaffold `C:\Projects\habagat` -> Plan A spike
 
 ---
 
 ## Open unknowns (honest)
 
-- Engine pin (Three.js vs Babylon vs WebGPU-first)
+- Engine pin (Three.js vs Babylon vs WebGPU-first) - still open
+- Whether WebGPU is **preferred** path with WebGL2 fallback, or WebGL2-first with WebGPU later (Android 12+ floor makes WebGPU viable, not mandatory-only)
 - Mobile GPU budget for rain + reflections
 - Whether score exists in first public build
 - Hero art path (kitbash vs procedural vs simple stylized mesh)

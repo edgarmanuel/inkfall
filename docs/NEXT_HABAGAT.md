@@ -1,9 +1,17 @@
 # NEXT PRODUCT BRIEF - HABAGAT (bold 3D)
 
-**Status:** INTENT LOCKED 2026-07-30 - portfolio showpiece + Snowflow-class
-fidelity chase; one-strip cut if stall.  
+**Status:** PINNED C + D 2026-07-30 - code at `C:\Projects\habagat`. Session closed.  
+**Audience:** **Hardcore** showpiece. Inkfall = broad; Habagat = fidelity over reach.  
+**Device floor:** Android 12+ Chrome only (no Android 12- AI convert spend).  
+**Pin:** **C** WebGPU-first max wow + **D** recorded video for can't-launch.  
+**Time of day:** **any** (day / overcast / night flood - night not required).  
+ 
+ 
 **Intent Lock:** `docs/ai/INTENT-2026-07-30-habagat.md`  
 **Research brief:** `docs/ai/RESEARCH-BRIEF-2026-07-30-habagat.md`  
+ 
+ 
+ 
 **Deprioritized:** Void Parry / Orbit Snap (still banked as thin 2h options).  
 **Carry:** Inkfall feel laws + archetype level laws (`LEARNINGS.md`) - roster
 delayed until look works.  
@@ -25,8 +33,9 @@ https://x.com/hey_madni/status/2082399524044296263
 | Diskarte | Multi-try breath budget = improvise several bends per stage |
 | Avoid P2E residue | Pure skill score, no wallet / grind economy |
 
-**Anchor sentence:** You bend **monsoon wind** through a dense night city -
-not as a cartoon power fantasy only, but as weather you *shape and ride*.
+**Anchor sentence:** You are a **Habagat bender** in a real PH **baha** (flood)
+night - shape monsoon wind to **cut a path through flood water** and ride it to
+high ground. Not dry cyberpunk neon; not Avatar IP.
 
 Working title: **HABAGAT**  
 Alt: Amihan (cool dry contrast mode later), Bagong Hangin, Diskarte Wind.
@@ -89,17 +98,14 @@ mobile cinematic stills" density, not 2012 canvas blobs.
 **Not the bar for v0.1 playable** - but art and engine choices must *point* here
 from day one (no permanent low-poly placeholder trap without a fidelity plan).
 
-### Engine / stack (next-session research lock)
+### Engine / stack (PINNED C + D)
 
-Preferred order for web + Android Chrome:
+1. **WebGPU-first** (Babylon.js WebGPU engine + custom wet-city strip)
+2. **D:** portfolio / share via recorded video for devices that cannot launch
+3. Live play: WebGPU-capable Android 12+ Chrome + desktop Chrome
+4. Deploy: Vite -> Vercel -> `habagat.egaimanuel.tech` when proud
 
-1. **Three.js** (or React Three Fiber if React already in monorepo muscle) +
-   custom post stack
-2. **Babylon.js** if PBR / tooling wins on first spike
-3. Avoid Unity WebGL for first ship unless operator insists (heavier pipeline)
-
-Deploy still: static or light Vite build -> Vercel -> `habagat.egaimanuel.tech`
-later.
+Do not water down look for non-WebGPU devices.
 
 ### Visual pillars (must-have eventually)
 
@@ -145,11 +151,10 @@ later.
 
 ## 6. Exact next session (low token)
 
-1. Read this file + `LEARNINGS.md` only.
-2. **Spike only:** scaffold `C:\Projects\habagat` (or agreed name) with Three.js,
-   one plane city strip, wind-ribbon draw-lock-ride, breath bar.
-3. Do **not** rebuild Inkfall; do **not** start Void Parry unless operator flips.
-4. Log spike result; decide vertical-slice budget (hours / fidelity gate).
+1. Work in `C:\Projects\habagat` (not inkfall gameplay).
+2. S1 feel: draw-lock-ride + breath + chase cam; then S2 look pass.
+3. Capture D video when look is non-apology.
+4. Do **not** rebuild Inkfall; do **not** start Void Parry unless operator flips.
 
 ### Operator choices (LOCKED 2026-07-30)
 
@@ -160,3 +165,4 @@ later.
 - Session-1 ambition: **Snowflow-class fidelity chase**
 - Stall fallback: **cut content, keep look - one beautiful strip**
 - First palette: still default Habagat wet-green-neon (Amihan later)
+- Stack: **C + D** (WebGPU live + video for can't-launch)
