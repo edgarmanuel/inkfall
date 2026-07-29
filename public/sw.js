@@ -1,5 +1,5 @@
 /* Inkfall service worker - offline shell + installability */
-const CACHE = "inkfall-v2";
+const CACHE = "inkfall-v3";
 const PRECACHE = [
   "/",
   "/index.html",

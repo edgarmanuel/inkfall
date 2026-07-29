@@ -41,7 +41,7 @@ Inkfall is a Progressive Web App. No Play Store required.
   open Chrome, paste it, then try again.
 - Offline: after first visit the shell is cached.
 - Updates: reopen when online after a deploy.
-- Music: bottom-right **M** mutes ambient music (SFX still play).
+- Music: bottom-right **M** mutes arcade BGM (SFX still play).
 
 ### Capacitor / Play Store APK
 

@@ -132,6 +132,8 @@
     #overlay.hidden { display: none; }
     .card {
       width: min(360px, 100%);
+      max-height: min(92vh, 780px);
+      overflow-y: auto;
       text-align: center;
       padding: 28px 22px 22px;
       border-radius: 22px;
@@ -225,6 +227,51 @@
       line-height: 1.4;
     }
     .fine b { opacity: 0.9; color: var(--ink); font-weight: 700; }
+    .legend {
+      margin: 0 0 16px;
+      text-align: left;
+      font-size: 11px;
+      line-height: 1.35;
+      background: rgba(255,255,255,0.28);
+      border: 1px solid rgba(42,34,24,0.1);
+      border-radius: 12px;
+      padding: 10px 12px 9px;
+    }
+    .legend h3 {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      opacity: 0.7;
+      margin: 0 0 7px;
+      text-align: center;
+    }
+    .legend-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 5px 0;
+      color: var(--ink-soft);
+    }
+    .legend-row b {
+      color: var(--ink);
+      font-weight: 800;
+      min-width: 3.6em;
+    }
+    .swatch {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 1px;
+      box-shadow: 0 0 0 1.5px rgba(42,34,24,0.12);
+    }
+    .swatch.dry { background: rgba(55,48,40,0.85); }
+    .swatch.patrol { background: rgba(70,50,40,0.9); box-shadow: 0 0 0 1.5px rgba(120,60,40,0.45); }
+    .swatch.thirst { background: rgba(90,55,48,0.9); box-shadow: 0 0 0 1.5px rgba(160,70,55,0.55); }
+    .swatch.smear { background: rgba(110,75,40,0.9); box-shadow: 0 0 0 1.5px rgba(150,100,45,0.5); }
+    .swatch.burst { background: rgba(45,36,40,0.95); box-shadow: 0 0 0 1.5px rgba(200,90,60,0.55); }
     #muteBtn {
       position: fixed;
       right: max(10px, env(safe-area-inset-right));
@@ -272,6 +319,14 @@
         Draw ink wells, then lift your finger to lock them.
         Stack several strokes. Guide the blot into the red seal.
       </p>
+      <div class="legend" id="enemyLegend" aria-label="Enemy legend">
+        <h3>Enemy legend</h3>
+        <div class="legend-row"><span class="swatch dry" aria-hidden="true"></span><span><b>Dry</b> soft push · light ink steal</span></div>
+        <div class="legend-row"><span class="swatch patrol" aria-hidden="true"></span><span><b>Patrol</b> moves · stronger push</span></div>
+        <div class="legend-row"><span class="swatch thirst" aria-hidden="true"></span><span><b>Thirst</b> drinks your locked wells</span></div>
+        <div class="legend-row"><span class="swatch smear" aria-hidden="true"></span><span><b>Smear</b> sticky pull toward it</span></div>
+        <div class="legend-row"><span class="swatch burst" aria-hidden="true"></span><span><b>Burst</b> contact knockback</span></div>
+      </div>
       <div class="stats">
         <div>Best score<b id="menuBest">0</b></div>
         <div>Last run<b id="menuLast">0</b></div>
@@ -280,7 +335,7 @@
       <button class="ghost hidden" id="shareBtn" type="button" style="display:none">Copy score challenge</button>
       <p class="fine">
         Tip: short curved strokes steer better than long lines.<br/>
-        Desktop: click-drag · Esc restarts after fail<br/><br/>
+        Desktop: click-drag · Esc restarts after fail · Music: bottom-right <b>M</b><br/><br/>
         <b>Install on Android (Chrome):</b><br/>
         Open this page in Chrome -&gt; menu (three dots) -&gt; <b>Install app</b><br/>
         or <b>Add to Home screen</b>. Launch from the icon for full screen.
@@ -361,81 +416,164 @@
     src.start();
   }
 
-  // Soft paper-room pad: low drone + sparse pentatonic plucks
-  const MUSIC_SCALE = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00];
+  // 80s/90s arcade chip loop: bass + lead + arp + drums (no audio files)
+  // Frequencies: A minor / E-ish tension - punchy square/triangle
+  const CHIP_BPM = 142;
+  const CHIP_STEP = 60 / CHIP_BPM / 4; // 16th notes
+  // 32-step patterns; 0 = rest
+  const CHIP_BASS = [
+    110, 0, 110, 0, 110, 0, 165, 0, 130.81, 0, 130.81, 0, 146.83, 0, 165, 0,
+    110, 0, 110, 0, 110, 0, 196, 0, 165, 0, 146.83, 0, 130.81, 0, 98, 0
+  ];
+  const CHIP_LEAD = [
+    440, 0, 523.25, 0, 659.25, 523.25, 0, 440, 392, 0, 440, 0, 523.25, 0, 0, 0,
+    659.25, 0, 523.25, 0, 440, 392, 0, 349.23, 392, 0, 440, 0, 523.25, 440, 0, 0
+  ];
+  const CHIP_ARP = [
+    220, 261.63, 329.63, 261.63, 220, 261.63, 329.63, 392,
+    196, 246.94, 293.66, 246.94, 196, 246.94, 293.66, 349.23,
+    220, 261.63, 329.63, 261.63, 220, 329.63, 392, 523.25,
+    165, 220, 261.63, 220, 196, 246.94, 293.66, 246.94
+  ];
+  // 1 = kick, 2 = snare-ish, 3 = hat
+  const CHIP_DRUM = [
+    1, 3, 3, 3, 2, 3, 3, 3, 1, 3, 3, 3, 2, 3, 1, 3,
+    1, 3, 3, 3, 2, 3, 3, 3, 1, 3, 2, 3, 2, 3, 1, 2
+  ];
+
+  function chipTone(freq, t0, dur, type, gain, dest, slide) {
+    if (!freq || !audioCtx) return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type || "square";
+    o.frequency.setValueAtTime(freq, t0);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, slide), t0 + dur * 0.9);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g);
+    g.connect(dest);
+    o.start(t0);
+    o.stop(t0 + dur + 0.03);
+  }
+  function chipKick(t0, dest) {
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(160, t0);
+    o.frequency.exponentialRampToValueAtTime(45, t0 + 0.11);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.42, t0 + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+    o.connect(g);
+    g.connect(dest);
+    o.start(t0);
+    o.stop(t0 + 0.16);
+  }
+  function chipNoise(t0, dur, gain, dest, freq) {
+    if (!audioCtx) return;
+    const n = Math.max(1, Math.floor(audioCtx.sampleRate * dur));
+    const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = audioCtx.createBufferSource();
+    const g = audioCtx.createGain();
+    const f = audioCtx.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.value = freq || 2400;
+    f.Q.value = 0.8;
+    src.buffer = buf;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(f);
+    f.connect(g);
+    g.connect(dest);
+    src.start(t0);
+    src.stop(t0 + dur + 0.02);
+  }
+
   function startMusic() {
     if (!audioCtx || !musicOn || music) return;
     const master = audioCtx.createGain();
     master.gain.value = 0.0001;
-    const lp = audioCtx.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = 900;
-    lp.Q.value = 0.5;
-    master.connect(lp);
-    lp.connect(audioCtx.destination);
-    master.gain.exponentialRampToValueAtTime(0.045, audioCtx.currentTime + 1.2);
+    // Mild bright shelf so chip cuts through phones
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 55;
+    const peaking = audioCtx.createBiquadFilter();
+    peaking.type = "peaking";
+    peaking.frequency.value = 1200;
+    peaking.Q.value = 0.7;
+    peaking.gain.value = 3.5;
+    master.connect(hp);
+    hp.connect(peaking);
+    peaking.connect(audioCtx.destination);
+    master.gain.exponentialRampToValueAtTime(0.22, audioCtx.currentTime + 0.12);
 
-    // two detuned drones (warm fifth)
-    const drones = [];
-    for (const [freq, type, g0] of [
-      [98.0, "sine", 0.55],
-      [146.83, "triangle", 0.22],
-      [196.0, "sine", 0.12]
-    ]) {
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = type;
-      o.frequency.value = freq;
-      g.gain.value = g0;
-      o.connect(g);
-      g.connect(master);
-      o.start();
-      drones.push({ o, g });
-    }
+    // Per-voice buses so drums stay punchy under melody
+    const bassG = audioCtx.createGain(); bassG.gain.value = 0.55;
+    const leadG = audioCtx.createGain(); leadG.gain.value = 0.38;
+    const arpG = audioCtx.createGain(); arpG.gain.value = 0.22;
+    const drumG = audioCtx.createGain(); drumG.gain.value = 0.5;
+    bassG.connect(master);
+    leadG.connect(master);
+    arpG.connect(master);
+    drumG.connect(master);
 
-    music = { master, lp, drones, step: 0, timer: null };
-    function pluck() {
-      if (!music || !audioCtx || !musicOn) return;
-      const t0 = audioCtx.currentTime;
-      const deg = MUSIC_SCALE[music.step % MUSIC_SCALE.length];
-      music.step += Math.random() < 0.35 ? 2 : 1;
-      // occasional rest
-      if (Math.random() < 0.18) {
-        music.timer = setTimeout(pluck, 900 + Math.random() * 700);
-        return;
+    let step = 0;
+    let nextTime = audioCtx.currentTime + 0.06;
+
+    function playStep(i, t0) {
+      const s = i % 32;
+      const bass = CHIP_BASS[s];
+      const lead = CHIP_LEAD[s];
+      const arp = CHIP_ARP[s];
+      const drum = CHIP_DRUM[s];
+
+      if (bass) chipTone(bass, t0, CHIP_STEP * 1.7, "square", 0.28, bassG);
+      if (lead) {
+        // short bright lead stabs; slight drop for arcade "zap"
+        chipTone(lead, t0, CHIP_STEP * 1.35, "square", 0.22, leadG, lead * 0.97);
       }
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = Math.random() < 0.5 ? "sine" : "triangle";
-      o.frequency.setValueAtTime(deg, t0);
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.035, t0 + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
-      o.connect(g);
-      g.connect(music.master);
-      o.start(t0);
-      o.stop(t0 + 1.7);
-      music.timer = setTimeout(pluck, 1100 + Math.random() * 900);
+      if (arp) chipTone(arp, t0, CHIP_STEP * 0.95, "triangle", 0.16, arpG);
+      if (drum === 1) chipKick(t0, drumG);
+      else if (drum === 2) chipNoise(t0, 0.09, 0.22, drumG, 1800);
+      else if (drum === 3) chipNoise(t0, 0.035, 0.08, drumG, 5200);
     }
-    music.timer = setTimeout(pluck, 600);
+
+    function schedule() {
+      if (!music || !audioCtx || !musicOn) return;
+      const horizon = audioCtx.currentTime + 0.18;
+      while (nextTime < horizon) {
+        playStep(step, nextTime);
+        step++;
+        nextTime += CHIP_STEP;
+      }
+    }
+
+    music = {
+      master: master,
+      buses: [bassG, leadG, arpG, drumG],
+      filters: [hp, peaking],
+      step: step,
+      nextTime: nextTime,
+      timer: setInterval(schedule, 20)
+    };
+    schedule();
   }
   function stopMusic() {
     if (!music) return;
-    if (music.timer) clearTimeout(music.timer);
+    if (music.timer) clearInterval(music.timer);
     try {
       if (audioCtx) {
         music.master.gain.cancelScheduledValues(audioCtx.currentTime);
-        music.master.gain.setValueAtTime(music.master.gain.value, audioCtx.currentTime);
-        music.master.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
+        music.master.gain.setValueAtTime(Math.max(0.0001, music.master.gain.value), audioCtx.currentTime);
+        music.master.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
       }
     } catch (_) {}
-    const old = music;
     music = null;
-    setTimeout(() => {
-      for (const d of old.drones) {
-        try { d.o.stop(); } catch (_) {}
-      }
-    }, 300);
   }
   function refreshMuteBtn() {
     if (!muteBtn) return;
