@@ -1,10 +1,16 @@
 # NEXT PRODUCT BRIEF - HABAGAT (bold 3D)
 
-**Status:** BANKED - preferred next product (operator 2026-07-30: go bold).  
+**Status:** INTENT LOCKED 2026-07-30 - portfolio showpiece + Snowflow-class
+fidelity chase; one-strip cut if stall.  
+**Intent Lock:** `docs/ai/INTENT-2026-07-30-habagat.md`  
+**Research brief:** `docs/ai/RESEARCH-BRIEF-2026-07-30-habagat.md`  
 **Deprioritized:** Void Parry / Orbit Snap (still banked as thin 2h options).  
-**Carry:** Inkfall feel laws + archetype level laws (`LEARNINGS.md`).  
+**Carry:** Inkfall feel laws + archetype level laws (`LEARNINGS.md`) - roster
+delayed until look works.  
 **IP:** Original "air bend" fantasy only - not Avatar: The Last Airbender IP,
-characters, or lore. Mechanic family = gesture-commit elemental control.
+characters, or lore. Mechanic family = gesture-commit elemental control.  
+**Reference (not clone):** Snowflow wow bar -
+https://x.com/hey_madni/status/2082399524044296263
 
 ---
 
@@ -145,8 +151,12 @@ later.
 3. Do **not** rebuild Inkfall; do **not** start Void Parry unless operator flips.
 4. Log spike result; decide vertical-slice budget (hours / fidelity gate).
 
-### Open operator choices (ask if ambiguous)
+### Operator choices (LOCKED 2026-07-30)
 
-- Hero: human runner vs kite vs paper leaf courier
-- Camera: chase 3rd person vs fixed cinematic side-angle 3D
-- First palette: full Habagat wet-green-neon vs Amihan cool-blue dry contrast
+- Hero: **human runner / courier**
+- Camera: **chase 3rd person, slightly elevated**
+- First wow: **wet night city materials + rain + neon** (not multi-spell first)
+- Purpose: **portfolio / fidelity showpiece** (score-challenge optional later)
+- Session-1 ambition: **Snowflow-class fidelity chase**
+- Stall fallback: **cut content, keep look - one beautiful strip**
+- First palette: still default Habagat wet-green-neon (Amihan later)

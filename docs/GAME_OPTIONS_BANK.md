@@ -21,19 +21,20 @@ same domain pattern (`name.egaimanuel.tech`).
 
 ---
 
-## 0. HABAGAT - NEXT (preferred)
+## 0. HABAGAT - NEXT (Intent locked 2026-07-30)
 
+- **Intent Lock:** `docs/ai/INTENT-2026-07-30-habagat.md`
+- **Research brief:** `docs/ai/RESEARCH-BRIEF-2026-07-30-habagat.md`
 - **Full brief:** `docs/NEXT_HABAGAT.md`
+- **Purpose:** portfolio / **fidelity showpiece** (score-challenge optional later)
 - **Loop:** Draw a 3D **wind ribbon** -> release locks the bend -> ride snappily.
-  Multi-try **breath** budget. Reach lantern / landing before breath dies.
-- **PH anchor:** Habagat / Amihan monsoon literacy + wet night-city identity;
-  diskarte multi-try; mobile short-session culture. No P2E.
-- **Airbender family:** gesture-commit elemental control (original IP only).
-- **Visual:** high-fidelity 3D targets (PBR wet streets, rain, neon, ribbons).
-- **FB hook:** "I bent the monsoon for ____. Beat me: habagat.egaimanuel.tech"
-- **First session:** Three.js spike only (ribbon + ride + breath + greybox).
-- **Why now:** operator remaining Grok budget + demand for bold fidelity after
-  Inkfall's 2D canvas success.
+  Multi-try **breath** budget. No mid-draw chase (Inkfall laws).
+- **Hero / cam:** human courier; chase 3rd elevated
+- **First wow:** wet night city + rain + neon; Snowflow-class ambition, not clone
+- **Stall fallback:** one beautiful strip (cut content, keep look)
+- **Next:** fill research matrix -> scaffold `C:\Projects\habagat` (no code yet)
+- **PH anchor:** Habagat / Amihan literacy + wet night-city; no P2E; original IP only
+- **FB hook (later):** "I bent the monsoon for ____. Beat me: habagat.egaimanuel.tech"
 
 ---
 

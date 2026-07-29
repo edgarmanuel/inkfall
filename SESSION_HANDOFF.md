@@ -2,45 +2,48 @@
 
 ## State
 
-- Date: 2026-07-30 (**session closed - Inkfall ship arc done**)
-- Game: **Inkfall** - playable web + PWA + custom domain
-- Live: **https://inkfall.egaimanuel.tech**
-- Fallback: https://inkfall-swart.vercel.app
+- Date: 2026-07-30 (**session closed** - Habagat Intent locked; research next)
+- Inkfall: **SHIPPED** - https://inkfall.egaimanuel.tech (PWA + domain)
 - Repo: **https://github.com/edgarmanuel/inkfall** (main)
-- Operator: level design great; Android install OK; ~2% Grok remaining used
-  this stretch -> next product goes **bold**
+- Habagat: Intent confirmed; research brief open; **no code yet**
+- Close log: `logs/SESSION_2026-07-30-close-habagat-intent.md`
 
-## Shipped this arc
+## Shipped (Inkfall - frozen product)
 
-- Core loop + paper/seal vibe + draw-then-lock + multi-stroke ink
-- Level archetypes + adversary verbs (dry/patrol/thirst/smear/burst)
-- Arcade BGM, enemy legend, feel + variety tests
-- PWA (manifest/SW/icons); Chrome install path
-- Custom domain inkfall.egaimanuel.tech
-- FB path via egai-audience Tone SSOT post file (score + paste)
+- Core loop, archetypes, adversary verbs, BGM, PWA, custom domain
+- FB personal: https://www.facebook.com/share/p/19Ah4HnD7c/
+  (logged in egai-audience; packet Taglish guide Applied)
 
 ## Carry forward (any next game)
 
-Read **`docs/LEARNINGS.md`** first:
+Read **`docs/LEARNINGS.md`**:
 
-- Archetype roster > numeric grind
-- Teach, rotate, gauntlet cadence, readable labels
-- Draw-then-lock / multi-try budget / snappy-after-commit
-- Adversary **verbs**, not more identical dots
+- Draw-then-lock / multi-try / snappy-after-commit
+- Archetype roster > numeric grind (roster delayed for Habagat showpiece)
 
-## Exact next action (NEW SESSION - low token)
+## Exact next action (NEW SESSION - research pass)
 
-**Product shift: HABAGAT (bold 3D) - not Void Parry.**
-
-1. Open `docs/NEXT_HABAGAT.md` + `docs/LEARNINGS.md` only
-2. Scaffold new repo/folder (suggest `C:\Projects\habagat`) - Three.js spike
-3. Implement wind-ribbon **draw -> lock on release -> ride** + breath budget
-4. Greybox city strip OK; visual targets point at high-fidelity night monsoon
+1. Read only:
+   - `docs/ai/INTENT-2026-07-30-habagat.md`
+   - `docs/ai/RESEARCH-BRIEF-2026-07-30-habagat.md`
+   - `docs/LEARNINGS.md` (feel laws)
+2. **Research pass:** fill options matrix in research brief
+   - Engine: Three.js vs Babylon vs WebGPU-first vs hybrid
+   - Wet night city + rain + neon on **mobile Chrome** vs desktop-first
+   - Cite sources; cost filter last; free-proof pin
+3. Snowflow = fidelity bar only (not clone):
+   https://x.com/hey_madni/status/2082399524044296263
+4. Stop after pin recommendation - scaffold `C:\Projects\habagat` only if
+   operator accepts pin and says start spike
 5. Do not rebuild Inkfall; do not start Void Parry unless asked
 
-Full brief: **`docs/NEXT_HABAGAT.md`**  
-Options bank updated: **`docs/GAME_OPTIONS_BANK.md`**  
-Close log: **`logs/SESSION_2026-07-30-close-bold-next.md`**
+## Habagat lock (pointer)
+
+- Plan A: one beautiful strip (showpiece corridor)
+- Hero: human courier | Cam: chase 3rd elevated
+- First wow: wet city + rain + neon
+- Fallback: cut content, keep look
+- Full brief: `docs/NEXT_HABAGAT.md`
 
 ## Feel law (Inkfall - do not regress if touching it)
 
@@ -49,16 +52,11 @@ Close log: **`logs/SESSION_2026-07-30-close-bold-next.md`**
 3. Multi-stroke ink budget
 4. After lock, snappy pull
 
-## FB (Inkfall)
+## Close checklist (this close)
 
-Paste-ready + tracking: egai-audience
-`content/04_posts/2026-07-30_build_inkfall-game.md`
-Live challenge: https://inkfall.egaimanuel.tech
-
-## Close checklist
-
-- [x] Inkfall live on custom domain
-- [x] PWA + install path
-- [x] Learnings + options bank + Habagat brief
+- [x] Habagat Intent Lock written + confirmed
+- [x] Research brief scaffolded for next session
+- [x] FB ship packet logged (inkfall + egai-audience Applied)
 - [x] Session log written
-- [x] Commit + push on close
+- [x] Handoff next = research pass only
+- [x] Commit on close
